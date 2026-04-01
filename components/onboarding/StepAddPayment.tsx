@@ -1,0 +1,133 @@
+'use client'
+
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+
+interface Props {
+  userId: string
+  clientId: string | null
+  onNext: () => void
+  onSkip: () => void
+}
+
+export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
+  const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const res = await fetch('/api/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        amount: parseFloat(amount),
+        currency: 'USD',
+        received_at: date,
+        notes: notes || null,
+      }),
+    })
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setError((json as { error?: string }).error ?? 'Failed to log payment.')
+      setLoading(false)
+      return
+    }
+
+    // Mark onboarding complete
+    await fetch('/api/onboarding/complete', { method: 'POST' })
+    setLoading(false)
+    onNext()
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl p-6 space-y-5"
+      style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
+    >
+      <div>
+        <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>
+          Log your first payment
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>
+          Record a payment you received recently to seed your dashboard.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="amount" className="section-label">Amount ($)</Label>
+        <Input
+          id="amount"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="1500"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="date" className="section-label">Date received</Label>
+        <Input
+          id="date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="notes" className="section-label">Notes (optional)</Label>
+        <Textarea
+          id="notes"
+          placeholder="Invoice #123, project deposit…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)', resize: 'none' }}
+        />
+      </div>
+
+      {error && <p className="text-xs" style={{ color: 'var(--red)' }}>{error}</p>}
+
+      <div className="flex gap-3">
+        <Button
+          type="submit"
+          disabled={loading || !amount}
+          className="flex-1 h-10"
+          style={{ background: 'var(--accent)', color: '#fff' }}
+        >
+          {loading ? 'Logging…' : 'Log payment →'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={async () => {
+            await fetch('/api/onboarding/complete', { method: 'POST' })
+            onSkip()
+          }}
+          className="h-10 px-4"
+          style={{ color: 'var(--text3)' }}
+        >
+          Skip
+        </Button>
+      </div>
+    </form>
+  )
+}

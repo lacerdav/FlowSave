@@ -5,7 +5,9 @@
       "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\")",
       "Read(//private/tmp/**)",
       "Bash(npx create-next-app@latest flowsave --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes)",
-      "Bash(npx shadcn@latest init --defaults -y)"
+      "Bash(npx shadcn@latest init --defaults -y)",
+      "Bash(npx shadcn@latest add dialog badge separator --yes)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
