@@ -12,6 +12,7 @@ interface Props {
 }
 
 interface MonthGroup {
+  key: string
   label: string
   payments: Payment[]
 }
@@ -24,20 +25,30 @@ function isFuture(dateStr: string): boolean {
 }
 
 function groupByMonth(payments: Payment[]): MonthGroup[] {
-  const groups: MonthGroup[] = []
-  let current: MonthGroup | null = null
-  for (const p of payments) {
-    const label = new Date(p.received_at + 'T00:00:00').toLocaleDateString('en-US', {
+  const groupsMap = new Map<string, MonthGroup>()
+  const sortedPayments = [...payments].sort(
+    (a, b) =>
+      new Date(b.received_at + 'T00:00:00').getTime() -
+      new Date(a.received_at + 'T00:00:00').getTime()
+  )
+
+  for (const p of sortedPayments) {
+    const date = new Date(p.received_at + 'T00:00:00')
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const label = date.toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
     })
-    if (!current || current.label !== label) {
-      current = { label, payments: [] }
-      groups.push(current)
+
+    const existing = groupsMap.get(key)
+    if (existing) {
+      existing.payments.push(p)
+    } else {
+      groupsMap.set(key, { key, label, payments: [p] })
     }
-    current.payments.push(p)
   }
-  return groups
+
+  return Array.from(groupsMap.values()).sort((a, b) => b.key.localeCompare(a.key))
 }
 
 export function PaymentList({ payments, clients, onDelete, deletingId }: Props) {
@@ -62,7 +73,7 @@ export function PaymentList({ payments, clients, onDelete, deletingId }: Props) 
   return (
     <div className="space-y-5">
       {groups.map((group) => (
-        <div key={group.label}>
+        <div key={group.key}>
           {/* Month header */}
           <p
             className="mb-2 px-1 text-xs font-medium tracking-widest uppercase"
