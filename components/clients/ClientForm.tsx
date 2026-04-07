@@ -65,7 +65,7 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 space-y-1.5">
-          <Label htmlFor="client-name" className="section-label">Name</Label>
+          <Label htmlFor="client-name" className="form-label">Name</Label>
           <Input
             id="client-name"
             type="text"
@@ -78,7 +78,7 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
         </div>
 
         <div className="w-full sm:w-36 space-y-1.5">
-          <Label htmlFor="currency" className="section-label">Currency</Label>
+          <Label htmlFor="currency" className="form-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
             <SelectTrigger>
               <SelectValue />

@@ -5,6 +5,7 @@ import { computeForecast } from '@/lib/forecast'
 import { formatCurrency } from '@/lib/utils'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { CashFlowChart, type ChartBar } from '@/components/dashboard/CashFlowChart'
+import { DashboardMotionShell } from '@/components/dashboard/DashboardMotionShell'
 import { RecentPayments, type PaymentItem } from '@/components/dashboard/RecentPayments'
 import { TaxReserveCard, type TaxReserveItem } from '@/components/dashboard/TaxReserveCard'
 import { SalaryProgress } from '@/components/dashboard/SalaryProgress'
@@ -221,122 +222,124 @@ export default async function DashboardPage() {
     : ''
 
   return (
-    <div className="space-y-10 pb-20">
-      <div className="fade-up dashboard-hero">
-        <p className="page-subtitle page-kicker">
-          Overview
-        </p>
-        <h1 className="dashboard-anchor page-title-gradient mt-5">Dashboard</h1>
-        <p className="dashboard-summary">
+    <DashboardMotionShell
+      heroKicker="Overview"
+      heroTitle="Dashboard"
+      heroDescription={
+        <>
           A clear view of what arrived, what is still pending, and how this month is
           tracking against the target you set.
-        </p>
-      </div>
-
-      {showEmptyBanner && (
-        <div
-          className="fade-up mx-auto flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-5 py-4"
-          style={{
-            background: 'var(--amber-dim)',
-            border: '1px solid var(--amber)',
-            color: 'var(--amber)',
-            fontSize: 13,
-          }}
-        >
-          <span>Your dashboard is empty —</span>
-          {(clientCount ?? 0) === 0 && (
-            <Link
-              href="/clients"
-              className="underline font-medium"
-              style={{ color: 'var(--amber)' }}
-            >
-              Add a client →
-            </Link>
-          )}
-          {(paymentCount ?? 0) === 0 && (
-            <Link
-              href="/payments"
-              className="underline font-medium"
-              style={{ color: 'var(--amber)' }}
-            >
-              Log a payment →
-            </Link>
-          )}
+        </>
+      }
+      emptyBanner={
+        showEmptyBanner ? (
+          <div
+            className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-5 py-4"
+            style={{
+              background: 'var(--amber-dim)',
+              border: '1px solid var(--amber)',
+              color: 'var(--amber)',
+              fontSize: 13,
+            }}
+          >
+            <span>Your dashboard is empty —</span>
+            {(clientCount ?? 0) === 0 && (
+              <Link
+                href="/clients"
+                className="underline font-medium"
+                style={{ color: 'var(--amber)' }}
+              >
+                Add a client →
+              </Link>
+            )}
+            {(paymentCount ?? 0) === 0 && (
+              <Link
+                href="/payments"
+                className="underline font-medium"
+                style={{ color: 'var(--amber)' }}
+              >
+                Log a payment →
+              </Link>
+            )}
+          </div>
+        ) : undefined
+      }
+      metricsRow={
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <MetricCard
+            label="This Month"
+            value={monthTotalLabel}
+            subtitle={
+              monthDeltaPct !== null
+                ? `${monthDeltaPct >= 0 ? '+' : ''}${monthDeltaPct}% vs last month`
+                : undefined
+            }
+            subtitleColor={
+              monthDeltaPct !== null && monthDeltaPct >= 0
+                ? 'var(--green)'
+                : monthDeltaPct !== null
+                ? 'var(--red)'
+                : undefined
+            }
+          />
+          <MetricCard
+            label="Tax Reserve"
+            value={taxTotalLabel}
+            valueColor="var(--amber)"
+            subtitle={`${settings.tax_reserve_pct}% of received`}
+          />
+          <MetricCard
+            label="Salary Gap"
+            value={
+              salaryGap <= 0
+                ? `+${formatCurrency(Math.abs(salaryGap), primaryCurrency)}`
+                : formatCurrency(salaryGap, primaryCurrency)
+            }
+            valueColor={salaryGap <= 0 ? 'var(--green)' : 'var(--red)'}
+            subtitle={
+              salaryGap <= 0
+                ? 'Surplus this month'
+                : `${formatCurrency(settings.target_monthly_salary, primaryCurrency)} target`
+            }
+          />
+          <MetricCard
+            label="Pending"
+            value={pendingLabel}
+            valueColor="var(--accent2)"
+            subtitle={
+              pendingCount > 0
+                ? `${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}`
+                : undefined
+            }
+            isEmpty={pendingCount === 0}
+            emptyMessage="No upcoming payments"
+            emptyAction={
+              <Link href="/projects" style={{ color: 'var(--accent2)' }}>
+                Add a project →
+              </Link>
+            }
+          />
         </div>
-      )}
-
-      <div className="fade-up-section grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          label="This Month"
-          value={monthTotalLabel}
-          subtitle={
-            monthDeltaPct !== null
-              ? `${monthDeltaPct >= 0 ? '+' : ''}${monthDeltaPct}% vs last month`
-              : undefined
-          }
-          subtitleColor={
-            monthDeltaPct !== null && monthDeltaPct >= 0
-              ? 'var(--green)'
-              : monthDeltaPct !== null
-              ? 'var(--red)'
-              : undefined
-          }
-        />
-        <MetricCard
-          label="Tax Reserve"
-          value={taxTotalLabel}
-          valueColor="var(--amber)"
-          subtitle={`${settings.tax_reserve_pct}% of received`}
-        />
-        <MetricCard
-          label="Salary Gap"
-          value={
-            salaryGap <= 0
-              ? `+${formatCurrency(Math.abs(salaryGap), primaryCurrency)}`
-              : formatCurrency(salaryGap, primaryCurrency)
-          }
-          valueColor={salaryGap <= 0 ? 'var(--green)' : 'var(--red)'}
-          subtitle={
-            salaryGap <= 0
-              ? 'Surplus this month'
-              : `${formatCurrency(settings.target_monthly_salary, primaryCurrency)} target`
-          }
-        />
-        <MetricCard
-          label="Pending"
-          value={pendingLabel}
-          valueColor="var(--accent2)"
-          subtitle={
-            pendingCount > 0
-              ? `${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}`
-              : undefined
-          }
-          isEmpty={pendingCount === 0}
-          emptyMessage="No upcoming payments"
-          emptyAction={
-            <Link href="/projects" style={{ color: 'var(--accent2)' }}>
-              Add a project →
-            </Link>
-          }
-        />
-      </div>
-
-      <div className="fade-up-section-2 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
-        <CashFlowChart bars={chartBars} averageLine={averageLine} />
-        <RecentPayments payments={recentPayments} />
-      </div>
-
-      <div className="fade-up-section-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <TaxReserveCard
-          items={taxItems}
-          taxPct={settings.tax_reserve_pct}
-        />
-        <SalaryProgress
-          received={totalThisMonth}
-          target={settings.target_monthly_salary}
-          currency={primaryCurrency}
-        />
-      </div>
-    </div>
+      }
+      middleRow={
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
+          <CashFlowChart bars={chartBars} averageLine={averageLine} />
+          <RecentPayments payments={recentPayments} />
+        </div>
+      }
+      lowerRow={
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <TaxReserveCard
+            items={taxItems}
+            taxPct={settings.tax_reserve_pct}
+          />
+          <SalaryProgress
+            received={totalThisMonth}
+            target={settings.target_monthly_salary}
+            currency={primaryCurrency}
+          />
+        </div>
+      }
+    />
   )
 }

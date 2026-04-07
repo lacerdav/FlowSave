@@ -60,7 +60,7 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="salary" className="section-label">Monthly target ($)</Label>
+        <Label htmlFor="salary" className="form-label">Monthly target ($)</Label>
         <Input
           id="salary"
           type="number"
@@ -73,7 +73,7 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="tax" className="section-label">Tax reserve (%)</Label>
+        <Label htmlFor="tax" className="form-label">Tax reserve (%)</Label>
         <Input
           id="tax"
           type="number"
@@ -87,7 +87,7 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="budget" className="section-label">Survival budget ($)</Label>
+        <Label htmlFor="budget" className="form-label">Survival budget ($)</Label>
         <Input
           id="budget"
           type="number"

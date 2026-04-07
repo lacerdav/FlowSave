@@ -122,7 +122,7 @@ export function DatePicker({
         aria-expanded={open}
       >
         <CalendarDaysIcon className="date-picker-trigger-icon" />
-        <span>{formatDateLabel(value)}</span>
+        <span className="date-picker-trigger-value">{formatDateLabel(value)}</span>
       </button>
 
       {open && (

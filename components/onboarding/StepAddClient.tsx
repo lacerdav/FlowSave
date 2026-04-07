@@ -57,7 +57,7 @@ export function StepAddClient({ userId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="client-name" className="section-label">Client name</Label>
+        <Label htmlFor="client-name" className="form-label">Client name</Label>
         <Input
           id="client-name"
           type="text"
@@ -69,7 +69,7 @@ export function StepAddClient({ userId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="currency" className="section-label">Currency</Label>
+        <Label htmlFor="currency" className="form-label">Currency</Label>
         <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
           <SelectTrigger>
             <SelectValue />

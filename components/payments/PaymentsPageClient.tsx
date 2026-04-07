@@ -28,8 +28,10 @@ export function PaymentsPageClient({ initialPayments, clients }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <PaymentForm clients={clients} onAdd={handleAdd} />
+    <div className="space-y-8">
+      <div className="mx-auto w-full max-w-[760px]">
+        <PaymentForm clients={clients} onAdd={handleAdd} />
+      </div>
       <PaymentList
         payments={payments}
         clients={clients}

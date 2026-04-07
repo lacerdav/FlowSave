@@ -346,6 +346,10 @@ When implementing visuals:
 - Global authenticated-page atmosphere is corrected to stay shell-owned and continuous across Dashboard, Clients, Payments, Projects, and Settings instead of feeling page-specific.
 - Sidebar divider presence is refined with a slightly more intentional navy energy so the shell edge reads clearly without becoming a hard border.
 - Hover glow is increased slightly on sidebar items, shell controls, and interactive card surfaces using restrained navy-blue border glow instead of louder neon treatment.
+- Payments controls are corrected to use one coherent premium dark control system, removing residual browser-default feeling from the amount field and aligning amount, date, select, notes, and CTA spacing.
+- The Payments date picker remains custom and is refined further so the calendar panel, typography, borders, and blue selection state sit naturally inside the app's dark surface language.
+- `shadcn/ui` is now the preferred primitive/component base for form controls where it clearly improves consistency, but stable custom controls should remain in place when replacement would add migration churn without real visual benefit.
+- `framer-motion` is now used selectively for premium reveal and shell-state motion only; dashboard hero/section entrances and sidebar collapse polish should stay short, calm, and fully reduced-motion aware.
 
 ### Typography refinement
 - Global font stack now follows a cleaner Apple-like system stack:
@@ -389,6 +393,49 @@ When implementing visuals:
 - Applied to dashboard: header, metric grid, chart+payments row, reserve+progress row — sequential depth
 - `@media (prefers-reduced-motion: reduce)` disables all fade-up animations
 - `card-interactive` hover transition extended from 150ms → 200ms for smoother lift feel
+
+## Phase 3.2.2 — Visual System Overhaul
+
+### Typography
+
+- `.card-label` upgraded: 10px → 11px, opacity 0.40 → 0.50 — card labels now read with quiet authority instead of disappearing
+- `.form-label` introduced: 12px / 500 / opacity 0.72 — all form field labels now use this class; a clear step up from `section-label` so form UIs feel like control panels, not generic web forms
+- `.metric-value` upgraded: 25px → 26px / weight 640 / richer neutral glow; four semantic subclasses added: `.metric-value--green`, `.metric-value--blue`, `.metric-value--amber`, `.metric-value--red` — colored metric values now emit a matching halo (e.g. total income glows green)
+- `.card-subtitle` upgraded: 12.5px → 13px, opacity 0.66 → 0.68
+- All form fields across PaymentForm, SettingsForm, ClientForm, ProjectForm, onboarding steps switched from `section-label` to `form-label`
+
+### Card system
+
+- `panel-surface` upgraded: stronger inner highlight (`inset 0 1px 0 rgba(255,255,255,0.05)` + secondary shimmer layer), added micro depth shadow (`0 2px 4px`) below the card surface — cards now feel like physical surfaces, not flat boxes
+- `card-interactive:hover` upgraded: border glow brightened, outer ambient glow widened (`0 0 44px`), inner highlight intensified — hover state now reads unmistakably as "this is alive"
+
+### CTA system
+
+- `.primary-cta-button:active` added: translateY(0), brightness 0.97, compressed shadow, 60ms transition — buttons now have a physical press-down feel
+- `.payment-submit:active` added: same pattern
+- Both CTAs were already in good shape; active state was the missing piece for tactile feedback
+
+### Status system
+
+- All four statuses in `ProjectList` now have `dotGlow` and `badgeGlow` — previously only `confirmed` had glows; now pending (amber), confirmed (blue), and received (green) all pulse with their semantic color
+- Badge glows are broader (12px spread) but low-opacity so they accent without screaming
+- Cancelled status dot dimmed to `rgba(240,240,255,0.20)` so it reads as intentionally dead
+
+### Interaction system
+
+- `row-hover:hover` upgraded: gradient direction changed to horizontal (left-tinted) + added `inset 3px 0 0 rgba(91,127,255,0.40)` left accent bar — rows now have a vivid blue left-edge highlight on hover that guides the eye down the list
+- ProjectList row hover applied inline for precise control per row (avoids bleed into bottom-border rows)
+- Amount values in ProjectList upgraded: 14px / weight 640 / letter-spacing -0.025em — financial numbers feel dominant
+
+### Glow system tokens
+
+CSS custom properties added to `:root`:
+- `--glow-green`, `--glow-blue`, `--glow-amber`, `--glow-red` — semantic box-shadow values for dots and badges
+- Utility classes: `.dot-glow--{color}`, `.badge-glow--{color}` — available for any future component needing semantic glow
+
+### MetricCard semantic glow
+
+- `MetricCard` now derives a semantic glow class from `valueColor` via `valueGlowClass()` helper — income cards glow green, pending cards glow blue, zero-state and surplus cases handled cleanly without adding props
 
 ## Phase 2.2 remaining items / known limitations
 

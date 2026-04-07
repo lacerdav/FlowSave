@@ -12,6 +12,16 @@ interface MetricCardProps {
   className?: string
 }
 
+/** Maps a semantic CSS color var to the appropriate metric-value glow class */
+function valueGlowClass(color: string | undefined): string {
+  if (!color) return ''
+  if (color.includes('--green'))  return 'metric-value--green'
+  if (color.includes('--accent')) return 'metric-value--blue'
+  if (color.includes('--amber'))  return 'metric-value--amber'
+  if (color.includes('--red'))    return 'metric-value--red'
+  return ''
+}
+
 export function MetricCard({
   label,
   value,
@@ -23,6 +33,8 @@ export function MetricCard({
   emptyAction,
   className = '',
 }: MetricCardProps) {
+  const glowClass = valueGlowClass(valueColor)
+
   return (
     <div
       className={`panel-surface card-interactive rounded-xl p-5 flex flex-col gap-3 ${className}`}
@@ -46,7 +58,7 @@ export function MetricCard({
       ) : (
         <>
           <span
-            className="metric-value"
+            className={`metric-value ${glowClass}`}
             style={{ color: valueColor ?? 'var(--text)', lineHeight: 1.1 }}
           >
             {value}

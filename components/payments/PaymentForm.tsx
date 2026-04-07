@@ -69,18 +69,15 @@ export function PaymentForm({ clients, onAdd }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="panel-surface-soft rounded-[18px] p-6 space-y-5"
+      className="payment-form panel-surface-soft rounded-[20px] p-6 sm:p-7"
     >
       <p className="section-label">Log payment</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-amount" className="section-label">Amount</Label>
-          <div className="relative">
-            <span
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none select-none"
-              style={{ color: 'var(--text3)' }}
-            >
+      <div className="payment-form-grid">
+        <div className="payment-field">
+          <Label htmlFor="payment-amount" className="form-label">Amount</Label>
+          <div className="payment-control-wrap">
+            <span className="payment-currency-symbol">
               {currency === 'BRL' ? 'R$' : '$'}
             </span>
             <Input
@@ -88,30 +85,32 @@ export function PaymentForm({ clients, onAdd }: Props) {
               type="number"
               min="0"
               step="0.01"
+              inputMode="decimal"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
               disabled={loading}
-              className={currency === 'BRL' ? 'pl-9' : 'pl-7'}
+              className={`payment-control payment-amount-input ${currency === 'BRL' ? 'pl-11' : 'pl-9'}`}
             />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-date" className="section-label">Date received</Label>
+        <div className="payment-field">
+          <Label htmlFor="payment-date" className="form-label">Date received</Label>
           <DatePicker
             id="payment-date"
             value={date}
             onChange={setDate}
             disabled={loading}
+            className="payment-date-picker"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-client" className="section-label">Client (optional)</Label>
+        <div className="payment-field">
+          <Label htmlFor="payment-client" className="form-label">Client (optional)</Label>
           <Select value={clientId} onValueChange={handleClientChange}>
-            <SelectTrigger>
+            <SelectTrigger className="payment-control payment-select-trigger">
               <SelectValue placeholder="Select client">
                 {(id: string | null) => {
                   if (!id || id === 'none') return 'No client'
@@ -119,7 +118,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
                 }}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="payment-select-content">
               <SelectItem value="none">No client</SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -128,13 +127,13 @@ export function PaymentForm({ clients, onAdd }: Props) {
           </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-currency" className="section-label">Currency</Label>
+        <div className="payment-field">
+          <Label htmlFor="payment-currency" className="form-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-            <SelectTrigger>
+            <SelectTrigger className="payment-control payment-select-trigger">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="payment-select-content">
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="BRL">BRL</SelectItem>
             </SelectContent>
@@ -142,8 +141,8 @@ export function PaymentForm({ clients, onAdd }: Props) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="payment-notes" className="section-label">Notes (optional)</Label>
+      <div className="payment-field">
+        <Label htmlFor="payment-notes" className="form-label">Notes (optional)</Label>
         <Textarea
           id="payment-notes"
           placeholder="Invoice #123, project deposit…"
@@ -151,7 +150,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           disabled={loading}
-          className="resize-none"
+          className="payment-control payment-notes resize-none"
         />
       </div>
 
@@ -160,8 +159,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
       <Button
         type="submit"
         disabled={loading || !amount}
-        className="h-11 px-6 font-medium"
-        style={{ background: 'var(--accent)', color: '#fff' }}
+        className="payment-submit primary-cta-button h-11 px-6"
       >
         {loading ? 'Logging…' : 'Log payment'}
       </Button>

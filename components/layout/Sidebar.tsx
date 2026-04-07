@@ -1,5 +1,6 @@
 'use client'
 
+import { m, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -24,6 +25,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname()
+  const shouldReduceMotion = useReducedMotion()
 
   return (
     <aside
@@ -49,7 +51,22 @@ export function Sidebar({ collapsed }: SidebarProps) {
               title={collapsed ? label : undefined}
             >
               <Icon className="shell-icon nav-icon" />
-              <span className="nav-label">{label}</span>
+              <m.span
+                className="nav-label"
+                initial={false}
+                animate={
+                  shouldReduceMotion
+                    ? { opacity: collapsed ? 0 : 1 }
+                    : { opacity: collapsed ? 0 : 1, x: collapsed ? -6 : 0 }
+                }
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                }
+              >
+                {label}
+              </m.span>
             </Link>
           )
         })}

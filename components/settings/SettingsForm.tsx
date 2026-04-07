@@ -55,8 +55,8 @@ export function SettingsForm({ defaultValues }: Props) {
         <p className="section-label">Income targets</p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="salary" className="section-label">Monthly target ($)</Label>
+      <div className="space-y-2">
+        <Label htmlFor="salary" className="form-label">Monthly target ($)</Label>
         <Input
           id="salary"
           type="number"
@@ -69,8 +69,8 @@ export function SettingsForm({ defaultValues }: Props) {
         <p className="small-label">Your target monthly take-home pay</p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="tax" className="section-label">Tax reserve (%)</Label>
+      <div className="space-y-2">
+        <Label htmlFor="tax" className="form-label">Tax reserve (%)</Label>
         <Input
           id="tax"
           type="number"
@@ -84,8 +84,8 @@ export function SettingsForm({ defaultValues }: Props) {
         <p className="small-label">Percentage set aside from each payment for taxes</p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="budget" className="section-label">Survival budget ($)</Label>
+      <div className="space-y-2">
+        <Label htmlFor="budget" className="form-label">Survival budget ($)</Label>
         <Input
           id="budget"
           type="number"
@@ -109,7 +109,7 @@ export function SettingsForm({ defaultValues }: Props) {
       <Button
         type="submit"
         disabled={loading}
-        className="h-11 px-6 font-medium"
+        className="primary-cta-button h-11 px-6 font-medium"
         style={{ background: 'var(--accent)', color: '#fff' }}
       >
         {loading ? 'Saving…' : 'Save settings'}

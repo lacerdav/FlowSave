@@ -1,14 +1,37 @@
-export default function ProjectsPage() {
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { ProjectsPageClient } from '@/components/projects/ProjectsPageClient'
+import type { Client, Project } from '@/types'
+
+export default async function ProjectsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const [{ data: projects }, { data: clients }] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('expected_date', { ascending: true }),
+    supabase
+      .from('clients')
+      .select('id, name, currency')
+      .eq('user_id', user.id)
+      .order('name'),
+  ])
+
   return (
     <div className="page-shell space-y-8 pb-20">
-      <div className="page-header">
-        <p className="page-subtitle page-kicker">Roadmap</p>
+      <div className="fade-up page-header">
+        <p className="page-subtitle page-kicker">Pipeline</p>
         <h1 className="page-title mt-4">Projects</h1>
       </div>
-      <div className="page-content-stack page-content-copy">
-        <p className="text-center text-sm" style={{ color: 'var(--text2)' }}>
-          Project tracking will be available in Phase 3.
-        </p>
+      <div className="fade-up-section page-content-stack">
+        <ProjectsPageClient
+          initialProjects={(projects ?? []) as Project[]}
+          clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
+        />
       </div>
     </div>
   )

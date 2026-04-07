@@ -224,12 +224,16 @@ DO NOT use:
   Visual approval pending — do not mark this phase complete until the updated UI is approved in-browser.
   Shell icon standard: `lucide-react` stroke icons only for app-shell navigation and shell controls.
   Shell atmosphere and hover glow were refined again for cleaner authenticated-page consistency.
+  Payments controls were refined for stronger dark-surface consistency and custom calendar quality.
+  Preferred control base: use `shadcn/ui` primitives/components where they improve consistency without forcing replacement of good custom controls.
+  `framer-motion` is now used for subtle reveal and shell-state motion only; avoid heavy transitions or decorative animation.
   [x] Atmospheric gradient system (true dark → light progression)
   [x] Typography refinement (reduce "AI feel")
   [x] Dashboard header redesign
   [x] Sidebar premium interaction (glow + active state)
   [x] Shell icon standardization (`lucide-react`)
   [x] Shell atmosphere cleanup + hover glow refinement
+  [x] Payments controls + calendar refinement
   [x] Visual hierarchy consistency across dashboard
   [x] Motion system (subtle reveal + transitions)
   [ ] Mobile validation at 375px
@@ -262,6 +266,7 @@ DO NOT use:
 - All Supabase queries → /lib/supabase/queries/ helpers
 - All OpenRouter calls → /lib/ai/openrouter.ts only
 - All visual implementation details must follow DESIGN.md when present
+- Prefer `shadcn/ui` primitives/components as the control base when they improve consistency; keep working custom components when replacement adds churn
 - No hardcoded secrets — process.env.* always
 - One component per file, named exports
 - No over-engineering — no abstractions not yet needed

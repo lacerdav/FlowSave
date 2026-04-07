@@ -99,7 +99,12 @@ export function PaymentList({ payments, clients, onDelete, deletingId }: Props) 
                   key={payment.id}
                   className="row-hover flex items-center justify-between px-5 py-4"
                   style={{
-                    background: isHovered ? 'rgba(255, 255, 255, 0.07)' : 'transparent',
+                    background: isHovered
+                      ? 'linear-gradient(180deg, rgba(19, 27, 56, 0.6) 0%, rgba(13, 18, 41, 0.44) 100%)'
+                      : 'transparent',
+                    boxShadow: isHovered
+                      ? 'inset 0 0 0 1px rgba(126, 151, 255, 0.08)'
+                      : undefined,
                     borderBottom: !isLast ? '1px solid var(--border)' : undefined,
                   }}
                   onMouseEnter={() => setHoveredId(payment.id)}

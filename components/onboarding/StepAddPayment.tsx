@@ -67,7 +67,7 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="amount" className="section-label">Amount ($)</Label>
+        <Label htmlFor="amount" className="form-label">Amount ($)</Label>
         <Input
           id="amount"
           type="number"
@@ -81,7 +81,7 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="date" className="section-label">Date received</Label>
+        <Label htmlFor="date" className="form-label">Date received</Label>
         <DatePicker
           id="date"
           value={date}
@@ -90,7 +90,7 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="notes" className="section-label">Notes (optional)</Label>
+        <Label htmlFor="notes" className="form-label">Notes (optional)</Label>
         <Textarea
           id="notes"
           placeholder="Invoice #123, project deposit…"
