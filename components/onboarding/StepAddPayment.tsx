@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -76,19 +77,15 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
         />
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="date" className="section-label">Date received</Label>
-        <Input
+        <DatePicker
           id="date"
-          type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
+          onChange={setDate}
         />
       </div>
 
@@ -100,7 +97,7 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)', resize: 'none' }}
+          className="resize-none"
         />
       </div>
 

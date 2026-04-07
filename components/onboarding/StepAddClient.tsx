@@ -65,19 +65,16 @@ export function StepAddClient({ userId, onNext, onSkip }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
         />
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="currency" className="section-label">Currency</Label>
         <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-          <SelectTrigger
-            style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
-          >
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+          <SelectContent>
             <SelectItem value="USD">USD — US Dollar</SelectItem>
             <SelectItem value="BRL">BRL — Brazilian Real</SelectItem>
           </SelectContent>

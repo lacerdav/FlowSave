@@ -59,8 +59,7 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
   return (
     <form
       onSubmit={handleSubmit}
-      className="panel-surface-soft rounded-xl p-5 space-y-4"
-      style={{ border: '1px solid var(--border)' }}
+      className="panel-surface-soft rounded-[18px] p-6 space-y-5"
     >
       <p className="section-label">Add client</p>
 
@@ -75,19 +74,16 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
             onChange={(e) => setName(e.target.value)}
             required
             disabled={loading}
-            style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
           />
         </div>
 
         <div className="w-full sm:w-36 space-y-1.5">
           <Label htmlFor="currency" className="section-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-            <SelectTrigger
-              style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
-            >
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+            <SelectContent>
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="BRL">BRL</SelectItem>
             </SelectContent>
@@ -98,7 +94,7 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
           <Button
             type="submit"
             disabled={loading || !name}
-            className="h-10 px-5 font-medium whitespace-nowrap"
+            className="h-11 px-5 font-medium whitespace-nowrap"
             style={{ background: 'var(--accent)', color: '#fff' }}
           >
             {loading ? 'Adding…' : 'Add client'}

@@ -30,7 +30,7 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       <ClientForm
         onAdd={handleAdd}
         onLimitReached={() => setShowModal(true)}
@@ -39,7 +39,7 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
       />
 
       {plan === 'free' && (
-        <p className="text-xs" style={{ color: 'var(--text3)' }}>
+        <p className="text-center text-xs" style={{ color: 'var(--text3)' }}>
           {clients.length}/2 clients used on free plan.
         </p>
       )}
@@ -51,6 +51,6 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
       />
 
       <UpgradeLimitModal open={showModal} onClose={() => setShowModal(false)} />
-    </>
+    </div>
   )
 }

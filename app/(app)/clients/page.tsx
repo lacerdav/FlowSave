@@ -21,17 +21,19 @@ export default async function ClientsPage() {
   ])
 
   return (
-    <div className="max-w-2xl space-y-7 pb-20">
-      <div className="fade-up pt-2">
+    <div className="page-shell space-y-8 pb-20">
+      <div className="fade-up page-header">
         <p className="page-subtitle page-kicker">
           Manage
         </p>
         <h1 className="page-title mt-4">Clients</h1>
       </div>
-      <ClientsPageClient
-        initialClients={clients ?? []}
-        plan={(userData?.plan ?? 'free') as 'free' | 'pro'}
-      />
+      <div className="fade-up-section page-content-stack">
+        <ClientsPageClient
+          initialClients={clients ?? []}
+          plan={(userData?.plan ?? 'free') as 'free' | 'pro'}
+        />
+      </div>
     </div>
   )
 }

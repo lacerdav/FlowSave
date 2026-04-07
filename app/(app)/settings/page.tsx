@@ -14,20 +14,22 @@ export default async function SettingsPage() {
     .single()
 
   return (
-    <div className="max-w-lg space-y-7 pb-20">
-      <div className="fade-up pt-2">
+    <div className="page-shell space-y-8 pb-20">
+      <div className="fade-up page-header">
         <p className="page-subtitle page-kicker">
           Preferences
         </p>
         <h1 className="page-title mt-4">Settings</h1>
       </div>
-      <SettingsForm
-        defaultValues={{
-          target_monthly_salary: settings?.target_monthly_salary ?? 0,
-          tax_reserve_pct: settings?.tax_reserve_pct ?? 25,
-          survival_budget: settings?.survival_budget ?? 0,
-        }}
-      />
+      <div className="fade-up-section page-content-stack page-content-form">
+        <SettingsForm
+          defaultValues={{
+            target_monthly_salary: settings?.target_monthly_salary ?? 0,
+            tax_reserve_pct: settings?.tax_reserve_pct ?? 25,
+            survival_budget: settings?.survival_budget ?? 0,
+          }}
+        />
+      </div>
     </div>
   )
 }

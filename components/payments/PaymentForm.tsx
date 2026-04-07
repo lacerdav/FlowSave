@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -68,8 +69,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="panel-surface-soft rounded-xl p-5 space-y-4"
-      style={{ border: '1px solid var(--border)' }}
+      className="panel-surface-soft rounded-[18px] p-6 space-y-5"
     >
       <p className="section-label">Log payment</p>
 
@@ -93,35 +93,25 @@ export function PaymentForm({ clients, onAdd }: Props) {
               onChange={(e) => setAmount(e.target.value)}
               required
               disabled={loading}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border-strong)',
-                color: 'var(--text)',
-                paddingLeft: currency === 'BRL' ? '2.25rem' : '1.75rem',
-              }}
+              className={currency === 'BRL' ? 'pl-9' : 'pl-7'}
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-date" className="section-label">Date received</Label>
-          <Input
+          <DatePicker
             id="payment-date"
-            type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
+            onChange={setDate}
             disabled={loading}
-            style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
           />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-client" className="section-label">Client (optional)</Label>
           <Select value={clientId} onValueChange={handleClientChange}>
-            <SelectTrigger
-              style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
-            >
+            <SelectTrigger>
               <SelectValue placeholder="Select client">
                 {(id: string | null) => {
                   if (!id || id === 'none') return 'No client'
@@ -129,7 +119,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
                 }}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+            <SelectContent>
               <SelectItem value="none">No client</SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -141,12 +131,10 @@ export function PaymentForm({ clients, onAdd }: Props) {
         <div className="space-y-1.5">
           <Label htmlFor="payment-currency" className="section-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-            <SelectTrigger
-              style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
-            >
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+            <SelectContent>
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="BRL">BRL</SelectItem>
             </SelectContent>
@@ -163,7 +151,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           disabled={loading}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)', resize: 'none' }}
+          className="resize-none"
         />
       </div>
 
@@ -172,7 +160,7 @@ export function PaymentForm({ clients, onAdd }: Props) {
       <Button
         type="submit"
         disabled={loading || !amount}
-        className="h-10 px-6 font-medium"
+        className="h-11 px-6 font-medium"
         style={{ background: 'var(--accent)', color: '#fff' }}
       >
         {loading ? 'Logging…' : 'Log payment'}

@@ -69,7 +69,6 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
           placeholder="5000"
           value={salary}
           onChange={(e) => setSalary(e.target.value)}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
         />
       </div>
 
@@ -84,7 +83,6 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
           placeholder="25"
           value={taxPct}
           onChange={(e) => setTaxPct(e.target.value)}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
         />
       </div>
 
@@ -98,7 +96,6 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
           placeholder="2000"
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text)' }}
         />
         <p className="text-xs" style={{ color: 'var(--text3)' }}>
           Minimum income to cover essential expenses

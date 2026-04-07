@@ -340,6 +340,12 @@ When implementing visuals:
 - Phase 2.2 was reopened again to soften the environmental system, reduce abrupt tonal change, and make the gradient feel more like depth behind the interface than a layer on top of it.
 - The new shell uses restrained navy foundations, slow blue expansion, and diffused lower-page haze so there is no harsh white band or mid-page slab.
 - Sidebar interaction safety remains protected by keeping decorative layers in isolated shell backgrounds with `pointer-events: none` and by keeping navbar, sidebar, and main content on higher interaction-safe layers.
+- Shell iconography is now standardized on `lucide-react` stroke icons for sidebar routes and shell controls; no mixed icon families should be introduced in the app shell.
+- The desktop collapse control is corrected to live on the sidebar/content divider as a shell control, not inside the navigation list, so it remains discoverable without competing with route items.
+- The top bar atmosphere is corrected again to remove muddy haze over the right-side controls; the navbar now uses a cleaner dark-to-navy blend so email, plan badge, upgrade, and sign-out stay crisp.
+- Global authenticated-page atmosphere is corrected to stay shell-owned and continuous across Dashboard, Clients, Payments, Projects, and Settings instead of feeling page-specific.
+- Sidebar divider presence is refined with a slightly more intentional navy energy so the shell edge reads clearly without becoming a hard border.
+- Hover glow is increased slightly on sidebar items, shell controls, and interactive card surfaces using restrained navy-blue border glow instead of louder neon treatment.
 
 ### Typography refinement
 - Global font stack now follows a cleaner Apple-like system stack:
@@ -357,6 +363,8 @@ When implementing visuals:
 ### Sidebar premium interaction
 - Sidebar gained a calmer liquid-glass treatment with softer panel depth, centered nav text, and more intentional internal spacing
 - A dedicated divider treatment now separates sidebar and content more clearly on desktop without relying on heavy shadows
+- Sidebar route items now use one shared icon size and spacing system so expanded and collapsed states feel like the same interface rather than two separate layouts
+- The collapse button is embedded on the divider zone with a subtle circular treatment and follows the sidebar width transition without creating layout jumpiness
 - Hover states use restrained soft-glow text response plus subtle liquid highlights, while active items feel selected through refined border and tint layering
 - The mobile version keeps the same interaction language in a horizontal rail below the navbar, preserving clickability and legibility at narrow widths
 

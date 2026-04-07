@@ -28,7 +28,7 @@ export function PaymentsPageClient({ initialPayments, clients }: Props) {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       <PaymentForm clients={clients} onAdd={handleAdd} />
       <PaymentList
         payments={payments}
@@ -36,6 +36,6 @@ export function PaymentsPageClient({ initialPayments, clients }: Props) {
         onDelete={handleDelete}
         deletingId={deletingId}
       />
-    </>
+    </div>
   )
 }

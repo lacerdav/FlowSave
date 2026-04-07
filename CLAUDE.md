@@ -222,10 +222,14 @@ DO NOT use:
 
 ### Phase 2.2 — Premium UI Evolution (IN PROGRESS)
   Visual approval pending — do not mark this phase complete until the updated UI is approved in-browser.
+  Shell icon standard: `lucide-react` stroke icons only for app-shell navigation and shell controls.
+  Shell atmosphere and hover glow were refined again for cleaner authenticated-page consistency.
   [x] Atmospheric gradient system (true dark → light progression)
   [x] Typography refinement (reduce "AI feel")
   [x] Dashboard header redesign
   [x] Sidebar premium interaction (glow + active state)
+  [x] Shell icon standardization (`lucide-react`)
+  [x] Shell atmosphere cleanup + hover glow refinement
   [x] Visual hierarchy consistency across dashboard
   [x] Motion system (subtle reveal + transitions)
   [ ] Mobile validation at 375px

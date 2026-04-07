@@ -97,11 +97,6 @@ export function LoginForm({ urlError }: LoginFormProps) {
           required
           disabled={loading}
           className="h-10"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-strong)',
-            color: 'var(--text)',
-          }}
         />
       </div>
 
