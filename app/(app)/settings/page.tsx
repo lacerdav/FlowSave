@@ -14,8 +14,13 @@ export default async function SettingsPage() {
     .single()
 
   return (
-    <div className="max-w-lg space-y-6">
-      <h1 className="page-title">Settings</h1>
+    <div className="max-w-lg space-y-7 pb-20">
+      <div className="fade-up pt-2">
+        <p className="page-subtitle page-kicker">
+          Preferences
+        </p>
+        <h1 className="page-title mt-4">Settings</h1>
+      </div>
       <SettingsForm
         defaultValues={{
           target_monthly_salary: settings?.target_monthly_salary ?? 0,

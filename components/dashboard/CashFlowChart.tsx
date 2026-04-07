@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
   Tooltip,
   Cell,
-  Line,
 } from 'recharts'
 
 export interface ChartBar {
@@ -26,24 +25,25 @@ interface CashFlowChartProps {
 
 function barFill(type: ChartBar['type']): string {
   switch (type) {
-    case 'historical':        return 'rgba(91,127,255,0.15)'
-    case 'current':           return '#5b7fff'
-    case 'forecast-healthy':  return '#5b7fff'
-    case 'forecast-lean':     return '#f5a623'
+    case 'historical':       return 'rgba(91,127,255,0.15)'
+    case 'current':          return '#5b7fff'
+    case 'forecast-healthy': return 'rgba(91,127,255,0.55)'
+    case 'forecast-lean':    return '#f5a623'
   }
 }
 
 function barStroke(type: ChartBar['type']): string {
   switch (type) {
-    case 'historical':        return 'rgba(91,127,255,0.25)'
-    case 'current':           return '#5b7fff'
-    case 'forecast-healthy':  return '#5b7fff'
-    case 'forecast-lean':     return '#f5a623'
+    case 'historical':       return 'rgba(91,127,255,0.30)'
+    case 'current':          return '#5b7fff'
+    case 'forecast-healthy': return 'rgba(91,127,255,0.70)'
+    case 'forecast-lean':    return '#f5a623'
   }
 }
 
 interface TooltipPayloadItem {
   value: number
+  payload: ChartBar
 }
 
 interface CustomTooltipProps {
@@ -54,21 +54,42 @@ interface CustomTooltipProps {
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null
+  const bar = payload[0].payload
+  const isForecast = bar.type === 'forecast-healthy' || bar.type === 'forecast-lean'
   return (
     <div
       style={{
-        background: 'var(--bg2)',
+        background: 'rgba(8, 11, 27, 0.96)',
         border: '1px solid var(--border-strong)',
-        borderRadius: 8,
-        padding: '8px 12px',
+        borderRadius: 10,
+        padding: '10px 14px',
         fontSize: 12,
         color: 'var(--text)',
+        boxShadow: 'none',
       }}
     >
-      <div style={{ color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--text3)',
+          marginBottom: 4,
+        }}
+      >
+        {label}
+        {isForecast && (
+          <span style={{ marginLeft: 6, color: 'var(--accent2)' }}>est.</span>
+        )}
+      </div>
+      <div style={{ fontWeight: 600, fontSize: 14 }}>
         {formatCurrency(payload[0].value, 'USD')}
       </div>
+      {bar.type === 'forecast-lean' && (
+        <div style={{ marginTop: 3, fontSize: 10, color: 'var(--amber)' }}>
+          Lean month
+        </div>
+      )}
     </div>
   )
 }
@@ -78,22 +99,44 @@ export function CashFlowChart({ bars, averageLine }: CashFlowChartProps) {
 
   return (
     <div
-      className="rounded-xl p-5"
+      className="panel-surface card-interactive rounded-xl p-6 relative overflow-hidden"
       style={{
-        background: 'var(--surface)',
         border: '1px solid var(--border)',
       }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <p className="section-label">Cash Flow</p>
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          height: '50%',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(91,127,255,0.04) 0%, transparent 68%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div className="relative flex items-center justify-between mb-6">
+        <div>
+          <p className="card-label">Cash Flow</p>
+          <p className="card-subtitle" style={{ marginTop: 4 }}>
+            Six-month overview
+          </p>
+        </div>
         {averageLine > 0 && (
-          <span className="text-xs flex items-center gap-1.5" style={{ color: 'var(--amber)' }}>
+          <span
+            className="flex items-center gap-1.5"
+            style={{ fontSize: 11, color: 'var(--amber)' }}
+          >
             <span
+              aria-hidden
               style={{
                 display: 'inline-block',
-                width: 16,
-                height: 1,
-                borderTop: '1px dashed var(--amber)',
+                width: 18,
+                height: 0,
+                borderTop: '1.5px dashed var(--amber)',
               }}
             />
             avg {formatCurrency(averageLine, 'USD')}
@@ -103,59 +146,50 @@ export function CashFlowChart({ bars, averageLine }: CashFlowChartProps) {
 
       {isEmpty ? (
         <div
-          className="flex items-center justify-center"
-          style={{ height: 200, color: 'var(--text3)', fontSize: 13 }}
+          className="flex flex-col items-center justify-center gap-2"
+          style={{ height: 240, color: 'var(--text2)', fontSize: 13 }}
         >
-          Log payments to see your cash flow
+          <span>No data yet</span>
+          <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+            Log payments to see your cash flow
+          </span>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={bars} barCategoryGap="32%">
-            <defs>
-              <linearGradient id="cashflow-line-gradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#22d3ee" />
-                <stop offset="100%" stopColor="#a855f7" />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'rgba(240,240,255,0.30)', fontSize: 11 }}
-            />
-            <YAxis hide />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-            />
-            <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-              {bars.map((bar, i) => (
-                <Cell
-                  key={i}
-                  fill={barFill(bar.type)}
-                  stroke={barStroke(bar.type)}
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={240}>
+            <ComposedChart data={bars} barCategoryGap="28%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'rgba(240,240,255,0.30)', fontSize: 11 }}
+              />
+              <YAxis hide />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'rgba(255,255,255,0.025)', radius: 6 }}
+              />
+              <Bar dataKey="amount" radius={[5, 5, 0, 0]}>
+                {bars.map((bar, i) => (
+                  <Cell
+                    key={i}
+                    fill={barFill(bar.type)}
+                    stroke={barStroke(bar.type)}
+                    strokeWidth={1}
+                  />
+                ))}
+              </Bar>
+              {averageLine > 0 && (
+                <ReferenceLine
+                  y={averageLine}
+                  stroke="var(--amber)"
+                  strokeDasharray="4 4"
                   strokeWidth={1}
                 />
-              ))}
-            </Bar>
-            <Line
-              type="monotone"
-              dataKey="amount"
-              stroke="url(#cashflow-line-gradient)"
-              strokeWidth={2.5}
-              dot={{ r: 4, fill: '#22d3ee', stroke: '#22d3ee' }}
-              activeDot={{ r: 5, fill: '#22d3ee', stroke: '#22d3ee' }}
-            />
-            {averageLine > 0 && (
-              <ReferenceLine
-                y={averageLine}
-                stroke="var(--amber)"
-                strokeDasharray="4 4"
-                strokeWidth={1}
-              />
-            )}
-          </ComposedChart>
-        </ResponsiveContainer>
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

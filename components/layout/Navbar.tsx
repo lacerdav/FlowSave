@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -21,29 +22,34 @@ export function Navbar({ email, plan }: NavbarProps) {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6"
-      style={{
-        background: 'rgba(7, 7, 26, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-      }}
+      className="app-navbar flex h-14 items-center justify-between px-4 sm:px-6"
     >
       <Link
         href="/dashboard"
-        className="text-base font-semibold tracking-tight"
-        style={{ color: 'var(--text)' }}
+        className="brand-link"
+        aria-label="FlowSave dashboard"
       >
-        FlowSave
+        <Image
+          src="/icon.png"
+          alt=""
+          width={485}
+          height={482}
+          className="brand-mark"
+          priority
+        />
+        <span className="brand-name">FlowSave</span>
       </Link>
 
-      <div className="flex items-center gap-3">
-        <span className="text-xs" style={{ color: 'var(--text3)' }}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <span
+          className="hidden max-w-[132px] truncate text-[11px] sm:block sm:max-w-[220px] sm:text-xs"
+          style={{ color: 'var(--text3)' }}
+        >
           {email}
         </span>
 
         <span
-          className="text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide"
+          className="rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide"
           style={{
             background: plan === 'pro' ? 'var(--accent-dim)' : 'var(--surface)',
             color: plan === 'pro' ? 'var(--accent2)' : 'var(--text3)',
@@ -56,7 +62,7 @@ export function Navbar({ email, plan }: NavbarProps) {
         {plan === 'free' && (
           <Link
             href="/upgrade"
-            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-opacity hover:opacity-80"
+            className="rounded-lg px-3 py-1.5 text-[11px] font-medium transition-opacity hover:opacity-80 sm:text-xs"
             style={{ background: 'var(--accent)', color: '#fff' }}
           >
             Upgrade
@@ -65,7 +71,7 @@ export function Navbar({ email, plan }: NavbarProps) {
 
         <button
           onClick={handleSignOut}
-          className="text-xs transition-colors hover:text-[var(--text)]"
+          className="text-[11px] transition-colors hover:text-[var(--text)] sm:text-xs"
           style={{ color: 'var(--text3)' }}
         >
           Sign out

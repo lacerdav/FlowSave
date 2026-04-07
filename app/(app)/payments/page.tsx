@@ -22,8 +22,13 @@ export default async function PaymentsPage() {
   ])
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="page-title">Payments</h1>
+    <div className="max-w-2xl space-y-7 pb-20">
+      <div className="fade-up pt-2">
+        <p className="page-subtitle page-kicker">
+          History
+        </p>
+        <h1 className="page-title mt-4">Payments</h1>
+      </div>
       <PaymentsPageClient
         initialPayments={(payments ?? []) as Payment[]}
         clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}

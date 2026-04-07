@@ -21,14 +21,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const plan = (userData?.plan ?? 'free') as 'free' | 'pro'
 
   return (
-    <div className="h-full" style={{ background: 'var(--bg)' }}>
+    <div className="app-shell">
+      <div aria-hidden className="app-shell__backdrop" />
       <Navbar email={email} plan={plan} />
       <Sidebar />
-      <main
-        className="pl-[200px] pt-14 min-h-screen"
-        style={{ background: 'var(--bg)' }}
-      >
-        <div className="p-6">{children}</div>
+      <main className="relative z-10 pt-[108px] md:pl-[220px] md:pt-14">
+        <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-6 sm:py-6">
+          {children}
+        </div>
       </main>
     </div>
   )

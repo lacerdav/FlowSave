@@ -2,6 +2,7 @@
 
 > Generated from CLAUDE.md + pre-build interview (2026-04-01).
 > This is the authoritative spec for the build session. Do not deviate without updating it.
+> DESIGN.md is the authoritative source for visual execution details.
 
 ---
 
@@ -14,33 +15,35 @@
 | Freemium UX | Inline upsell modal on "Add Client" click when free user has ≥ 2 clients |
 | Forecast fallback | Average available months; fall back to `target_monthly_salary` if zero history; label "estimated" |
 | Stripe trial | Card at signup; non-conversion = auto-downgrade to free; data preserved forever, never deleted |
-| Onboarding | 3-step wizard on first login; skip allowed; redirects to /dashboard after |
+| Onboarding | 3-step wizard on first login; skip allowed; redirects to `/dashboard` after |
+| Visual direction | todesktop-inspired fluid product UI with atmospheric dark-to-light page transitions on long pages |
+| Motion direction | subtle reveal, parallax feel, hover motion, and section transitions where they improve perceived quality |
 
 ---
 
 ## Architecture Overview
 
-```
+```text
 /app
   (auth)/
-    login/page.tsx          ← magic link entry
-    callback/route.ts       ← Supabase auth callback
+    login/page.tsx
+    callback/route.ts
   (app)/
-    layout.tsx              ← app shell (sidebar + navbar), auth-guarded
+    layout.tsx
     dashboard/page.tsx
     clients/page.tsx
     payments/page.tsx
     projects/page.tsx
     settings/page.tsx
     upgrade/page.tsx
-    onboarding/page.tsx     ← 3-step wizard (shown once)
+    onboarding/page.tsx
   api/
-    ai/summary/route.ts     ← Pro-gated, calls OpenRouter
-    ai/lean-alert/route.ts  ← Pro-gated
+    ai/summary/route.ts
+    ai/lean-alert/route.ts
     webhooks/stripe/route.ts
 
 /components
-  ui/                       ← shadcn/ui primitives
+  ui/
   layout/
     Sidebar.tsx
     Navbar.tsx
@@ -52,11 +55,11 @@
     TaxReserveCard.tsx
     SalaryProgress.tsx
     ForecastPanel.tsx
-    AiInsightCard.tsx       ← Pro only; shows upsell card for free users
+    AiInsightCard.tsx
   clients/
     ClientForm.tsx
     ClientList.tsx
-    UpgradeLimitModal.tsx   ← shown when free user hits 2-client limit
+    UpgradeLimitModal.tsx
   payments/
     PaymentForm.tsx
     PaymentList.tsx
@@ -69,13 +72,13 @@
     StepAddClient.tsx
     StepAddPayment.tsx
   shared/
-    PlanGate.tsx            ← wrapper: renders children for Pro, upsell card for free
+    PlanGate.tsx
 
 /lib
   supabase/
-    client.ts               ← browser client (createBrowserClient)
-    server.ts               ← server client (createServerClient)
-    middleware.ts           ← session refresh
+    client.ts
+    server.ts
+    middleware.ts
     queries/
       payments.ts
       clients.ts
@@ -83,111 +86,107 @@
       settings.ts
       user.ts
   ai/
-    openrouter.ts           ← all OpenRouter calls, nowhere else
+    openrouter.ts
   stripe/
     client.ts
-    helpers.ts              ← createCheckoutSession, createPortalSession
-  forecast.ts               ← 3-month projection algorithm
-  utils.ts                  ← currency format, date helpers
+    helpers.ts
+  forecast.ts
+  utils.ts
 
 /emails
   LeanMonthAlert.tsx
 
 /types
-  supabase.ts               ← generated (npx supabase gen types)
-  index.ts                  ← app-level types
+  supabase.ts
+  index.ts
 
-/middleware.ts              ← route protection (redirect unauthenticated to /login)
+/middleware.ts
+/DESIGN.md                ← source of truth for visual execution
 ```
 
 ---
 
-## Database Schema (final)
+## Visual system authority
 
-```sql
--- migrations/001_init.sql
-
-create table users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null,
-  created_at timestamptz default now(),
-  stripe_customer_id text,
-  plan text not null default 'free' check (plan in ('free', 'pro'))
-);
-
-create table clients (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
-  name text not null,
-  currency text not null default 'USD',
-  created_at timestamptz default now()
-);
-
-create table payments (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
-  client_id uuid references clients(id) on delete set null,
-  amount numeric(12,2) not null,
-  currency text not null default 'USD',
-  received_at date not null,
-  notes text,
-  created_at timestamptz default now()
-);
-
-create table projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
-  client_id uuid references clients(id) on delete set null,
-  name text not null,
-  expected_amount numeric(12,2) not null,
-  expected_date date not null,
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'received', 'cancelled')),
-  created_at timestamptz default now()
-);
-
-create table settings (
-  user_id uuid primary key references users(id) on delete cascade,
-  target_monthly_salary numeric(12,2) not null default 0,
-  tax_reserve_pct numeric(5,2) not null default 25,
-  survival_budget numeric(12,2) not null default 0,
-  onboarding_completed boolean not null default false,
-  lean_alert_sent_at timestamptz,           -- freq cap: 1 email per lean month
-  ai_insight_cache text,                    -- cached Pro insight string
-  ai_insight_cached_at timestamptz,         -- cache timestamp; invalidate after 24h
-  updated_at timestamptz default now()
-);
-
--- Indexes
-create index idx_payments_user_date on payments(user_id, received_at desc);
-create index idx_projects_user_status on projects(user_id, status);
-
--- RLS
-alter table users enable row level security;
-alter table clients enable row level security;
-alter table payments enable row level security;
-alter table projects enable row level security;
-alter table settings enable row level security;
-
-create policy "own rows" on users for all using (id = auth.uid());
-create policy "own rows" on clients for all using (user_id = auth.uid());
-create policy "own rows" on payments for all using (user_id = auth.uid());
-create policy "own rows" on projects for all using (user_id = auth.uid());
-create policy "own rows" on settings for all using (user_id = auth.uid());
-```
-
-`settings.onboarding_completed` tracks whether the wizard has been seen. On auth callback: if no settings row or `onboarding_completed: false`, redirect to `/onboarding`.
+- CLAUDE.md defines product philosophy, rules, and phase scope.
+- SPEC.md defines architecture, business logic, and flows.
+- DESIGN.md defines visual execution, spacing, backgrounds, motion, contrast, and component behavior.
+- If there is conflict about visual implementation, DESIGN.md wins.
+- If there is conflict about feature behavior or data logic, SPEC.md wins.
 
 ---
 
-## Auth Flow
+## Visual direction
 
-1. `/login` — email input → `supabase.auth.signInWithOtp({ email })`
-2. Supabase sends magic link → user clicks → `/auth/callback`
-3. `/auth/callback/route.ts` — exchange code, set session, check settings row:
-   - No settings row → insert default row (`onboarding_completed: false`) → redirect `/onboarding`
-   - `onboarding_completed: false` → redirect `/onboarding`
-   - Otherwise → redirect `/dashboard`
-4. `middleware.ts` — refresh session on every request; redirect unauthenticated to `/login`
+FlowSave is not a flat dark dashboard. It should feel fluid and premium.
+The app begins in deep navy and may gradually brighten into airy blue and near-white
+zones as the user scrolls on long pages. This mirrors the cinematic flow seen in the
+todesktop.com reference while preserving financial clarity.
+
+Rules:
+- Environmental gradients can shift from dark to bright by scroll depth or section.
+- Semantic data colors remain fixed: green/blue/amber/red only.
+- Cards must adapt to the section they live in: dark-section cards use dark surfaces;
+  bright-section cards use translucent bright surfaces with dark text.
+- Motion must support hierarchy, not distract from it.
+- Use CSS and Framer Motion sparingly and intentionally.
+
+---
+
+## App Shell
+
+`/app/(app)/layout.tsx` — server component:
+1. Read session — middleware handles redirect if unauthenticated
+2. Fetch `users.plan` (passed to `AppShell` for `PlanGate` throughout the app)
+3. Apply page background wrappers that support long-form atmospheric transitions on pages that need it
+
+`AppShell.tsx`:
+- Fixed navbar (56px, semi-transparent, blur backdrop)
+- Left sidebar (200px, `border-right: 1px var(--border)` in dark sections)
+- Main content (flex-1, padding 24px)
+- Sidebar links: Dashboard, Clients, Payments, Projects, Settings
+- Navbar: logo left | email + plan badge + upgrade CTA right (upgrade CTA hidden for Pro)
+- On long pages, background treatment may shift from dark navy near the top toward brighter sections lower on the page
+
+---
+
+## Dashboard Page
+
+**Four metric cards:**
+1. This month — `SUM(payments.amount)` where `received_at` in current month
+2. Tax reserve — metric 1 × `tax_reserve_pct / 100`
+3. Salary gap — `target_monthly_salary − metric 1` (green if surplus, red if deficit)
+4. Pending — `SUM(projects.expected_amount)` where `status IN ('pending','confirmed')`
+
+**Cash flow chart** (Recharts `BarChart`):
+- 6 months: 3 historical + current + 2 forecast
+- Historical: `rgba(91,127,255,0.15)` fill
+- Current month: solid `--accent`
+- Forecast: `--accent` if ≥ `survival_budget`, `--amber` if lean
+- Dashed `--amber` reference line = rolling average of historical months
+- Chart card should behave like a hero element, with enough space and motion polish to feel premium
+
+**Recent payments list:** last 10, client color dot + name, amount, date
+
+**Tax reserve card:** per-payment breakdown for current month + monthly total
+
+**Salary target progress:** progress bar, `received / target_monthly_salary`, label "X% of target" or "Target exceeded"
+
+**AI insights (Pro only):**
+- Monthly summary (2 sentences) + lean month alert if applicable
+- Cache: serve `settings.ai_insight_cache` if `ai_insight_cached_at` < 24h ago; otherwise call OpenRouter and update cache
+- Free users: static upsell card
+
+**Empty state banner:**
+- Condition: `onboarding_completed: true` AND (`clientCount === 0` OR `paymentCount === 0`)
+- Amber banner, non-dismissible: "Your dashboard is empty — Add a client → or Log a payment →"
+- Disappears automatically once both exist
+
+Visual notes:
+- Dashboard top starts in dark navy
+- Lower sections may transition into brighter atmospheric zones
+- Cards, text color, and borders must adapt to their section background
+- Reveal motion for sections should be subtle and polished
 
 ---
 
@@ -210,84 +209,27 @@ Route: `/onboarding` — server component wrapper, `'use client'` wizard compone
 
 **Skip behavior**: "Skip for now" on any step marks `onboarding_completed: true`. Wizard never re-appears. Dashboard shows empty-state banner until data exists.
 
----
-
-## App Shell
-
-`/app/(app)/layout.tsx` — server component:
-1. Read session — middleware handles redirect if unauthenticated
-2. Fetch `users.plan` (passed to `AppShell` for `PlanGate` throughout the app)
-
-`AppShell.tsx`:
-- Fixed navbar (56px, semi-transparent, blur backdrop)
-- Left sidebar (200px, `border-right: 1px var(--border)`)
-- Main content (flex-1, padding 24px)
-- Sidebar links: Dashboard, Clients, Payments, Projects, Settings
-- Navbar: logo left | email + plan badge + upgrade CTA right (upgrade CTA hidden for Pro)
+Visual notes:
+- Wizard may use a more cinematic full-page progression than the current dashboard
+- Motion between steps should feel continuous and calm
 
 ---
 
-## Dashboard Page
+## Auth Flow
 
-**Four metric cards:**
-1. This month — `SUM(payments.amount)` where `received_at` in current month
-2. Tax reserve — metric 1 × `tax_reserve_pct / 100`
-3. Salary gap — `target_monthly_salary − metric 1` (green if surplus, red if deficit)
-4. Pending — `SUM(projects.expected_amount)` where `status IN ('pending','confirmed')`
-
-**Cash flow chart** (Recharts `BarChart`):
-- 6 months: 3 historical + current + 2 forecast
-- Historical: `rgba(91,127,255,0.15)` fill
-- Current month: solid `--accent`
-- Forecast: `--accent` if ≥ `survival_budget`, `--amber` if lean
-- Dashed `--amber` reference line = rolling average of historical months
-
-**Recent payments list:** last 10, client color dot + name, amount, date
-
-**Tax reserve card:** per-payment breakdown for current month + monthly total
-
-**Salary target progress:** progress bar, `received / target_monthly_salary`, label "X% of target" or "Target exceeded"
-
-**AI insights (Pro only):**
-- Monthly summary (2 sentences) + lean month alert if applicable
-- Cache: serve `settings.ai_insight_cache` if `ai_insight_cached_at` < 24h ago; otherwise call OpenRouter and update cache
-- Free users: static upsell card
-
-**Empty state banner:**
-- Condition: `onboarding_completed: true` AND (`clientCount === 0` OR `paymentCount === 0`)
-- Amber banner, non-dismissible: "Your dashboard is empty — Add a client → or Log a payment →"
-- Disappears automatically once both exist
-
----
-
-## Freemium Gate: Client Limit
-
-- "Add Client" button: if `plan === 'free'` and `clientCount >= 2`, opens `<UpgradeLimitModal />`
-- Modal: limit explanation, Pro feature list, "Upgrade to Pro — $19/mo" CTA, "Maybe later" dismiss
-- Server Action for client insert: independently checks count and returns error for over-limit free users
-
----
-
-## Pro Gate: AI Features
-
-```
-Client component
-  └─ Server Action: getMonthlyInsight(userId)
-        └─ check plan === 'pro'
-              free  → return null (no network call)
-              pro   → POST /api/ai/summary
-                          └─ re-check plan === 'pro'  (independent)
-                                fail → 403
-                                pass → lib/ai/openrouter.ts → string
-```
-
-`/lib/ai/openrouter.ts` is the only file that calls OpenRouter. Never inline elsewhere.
+1. `/login` — email input → `supabase.auth.signInWithOtp({ email })`
+2. Supabase sends magic link → user clicks → `/auth/callback`
+3. `/auth/callback/route.ts` — exchange code, set session, check settings row:
+   - No settings row → insert default row (`onboarding_completed: false`) → redirect `/onboarding`
+   - `onboarding_completed: false` → redirect `/onboarding`
+   - Otherwise → redirect `/dashboard`
+4. `middleware.ts` — refresh session on every request; redirect unauthenticated to `/login`
 
 ---
 
 ## Forecast Algorithm (`/lib/forecast.ts`)
 
-```
+```text
 Input:  payments[], projects[], settings, today: Date
 Output: ForecastMonth[] — { month: Date, projected: number, isLean: boolean, isEstimated: boolean }
 
@@ -328,8 +270,8 @@ Output: ForecastMonth[] — { month: Date, projected: number, isLean: boolean, i
 ## OpenRouter Integration (`/lib/ai/openrouter.ts`)
 
 ```typescript
-const PRIMARY  = process.env.OPENROUTER_PRIMARY_MODEL!;   // google/gemini-2.5-flash-lite
-const FALLBACK = process.env.OPENROUTER_FALLBACK_MODEL!;  // deepseek/deepseek-chat-v3-0324
+const PRIMARY  = process.env.OPENROUTER_PRIMARY_MODEL!;
+const FALLBACK = process.env.OPENROUTER_FALLBACK_MODEL!;
 
 export async function callOpenRouter(prompt: string): Promise<string | null>
 // - Try PRIMARY; on error try FALLBACK; return null on both failing
@@ -367,6 +309,22 @@ export async function callOpenRouter(prompt: string): Promise<string | null>
 3. TaxReserveCard, SalaryProgress
 4. Onboarding wizard (3 steps + skip logic)
 
+### Phase 2.1 — Dashboard refinement
+1. Metric cards visual polish
+2. Chart hierarchy and spacing polish
+3. Multi-currency clarity pass
+4. Pending card empty state redesign
+5. Salary gap and progress language refinement
+6. Dashboard micro-interactions
+7. Mobile polish at 375px
+
+### Phase 2.2 — Visual refinement (todesktop-inspired)
+1. Create DESIGN.md if missing
+2. Implement atmospheric dark-to-light page backgrounds on long pages
+3. Implement motion system for section reveal, hover, and fluid page progression
+4. Adapt cards and typography for bright lower sections where used
+5. Align Dashboard, Clients, and Payments to DESIGN.md
+
 ### Phase 3 — Intelligence
 1. Projects: form + list
 2. `forecast.ts` algorithm
@@ -386,31 +344,15 @@ export async function callOpenRouter(prompt: string): Promise<string | null>
 
 ---
 
-## Environment Variables
-
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-OPENROUTER_API_KEY=
-OPENROUTER_PRIMARY_MODEL=google/gemini-2.5-flash-lite
-OPENROUTER_FALLBACK_MODEL=deepseek/deepseek-chat-v3-0324
-RESEND_API_KEY=
-NEXT_PUBLIC_APP_URL=https://getflowsave.com
-```
-
----
-
 ## Done Criteria (per feature)
 
 1. Works end-to-end in browser
 2. Empty, loading, and error states handled
 3. Responsive at 375px minimum
-4. Design system applied: dark theme, CSS vars, correct typography
-5. `npx tsc --noEmit` passes
+4. Design system applied correctly per CLAUDE.md and DESIGN.md
+5. Dark-to-light atmospheric transitions are smooth where used and never damage readability
+6. Motion is fluid, subtle, and purposeful
+7. `npx tsc --noEmit` passes
 
 ---
 

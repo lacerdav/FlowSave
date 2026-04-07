@@ -42,12 +42,27 @@
 
 /* ── FlowSave Design System ───────────────────────────────────────────────── */
 :root {
-  /* Backgrounds */
+  /* Backgrounds — dark to atmospheric light */
   --bg:            #07071a;
   --bg2:           #0d0d28;
+  --bg3:           #151a3a;
+  --bg4:           #dfe7ff;
+  --bg5:           #f7f9ff;
+
+  /* Surfaces */
   --surface:       rgba(255, 255, 255, 0.04);
+  --surface-2:     rgba(255, 255, 255, 0.06);
+  --surface-light: rgba(255, 255, 255, 0.72);
+
+  /* Borders */
   --border:        rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
+  --border-light:  rgba(15, 23, 42, 0.08);
+
+  /* Text on bright sections */
+  --text-dark:   #101426;
+  --text-dark-2: rgba(16, 20, 38, 0.68);
+  --text-dark-3: rgba(16, 20, 38, 0.42);
 
   /* Accent */
   --accent:        #5b7fff;
@@ -104,7 +119,7 @@
   }
 
   html {
-    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -115,34 +130,341 @@
     font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
+    position: relative;
+  }
+
+  .app-shell {
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    background-color: var(--bg);
+  }
+
+  .app-shell__backdrop {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    contain: paint;
+    background:
+      radial-gradient(circle at 16% 10%, rgba(82, 111, 195, 0.07) 0%, transparent 24%),
+      radial-gradient(88% 50% at 50% 98%, rgba(54, 79, 142, 0.11) 0%, rgba(30, 43, 80, 0.05) 34%, rgba(14, 21, 41, 0.02) 50%, rgba(7, 7, 26, 0) 70%),
+      linear-gradient(
+        180deg,
+        #050713 0%,
+        #060917 30%,
+        #081022 58%,
+        #0a1428 80%,
+        #0d1830 100%
+      );
   }
 
   /* ── Typography utilities ───────────────────────────────── */
   .page-title {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
+    font-size: clamp(30px, 4.4vw, 36px);
+    font-weight: 630;
+    letter-spacing: -0.055em;
     color: var(--text);
+    line-height: 1.02;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(230, 238, 255, 0.58);
+    line-height: 1;
+  }
+
+  .page-kicker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(176, 198, 255, 0.20);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%),
+      rgba(12, 18, 42, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .page-title-gradient {
+    background: linear-gradient(120deg, #eef3ff 0%, #dbe5ff 42%, #bccdf6 76%, #a9bcea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 16px rgba(151, 176, 240, 0.05);
+  }
+
+  .dashboard-hero {
+    position: relative;
+    max-width: 760px;
+    margin-inline: auto;
+    padding: 0.75rem 1rem 0;
+    text-align: center;
+  }
+
+  .dashboard-hero::before {
+    content: '';
+    position: absolute;
+    inset: -2.75rem -3rem auto;
+    height: 13rem;
+    border-radius: 999px;
+    background: radial-gradient(circle at 50% 0%, rgba(108, 136, 226, 0.10) 0%, rgba(61, 89, 178, 0.04) 38%, transparent 76%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .dashboard-anchor {
+    font-size: clamp(48px, 8vw, 68px);
+    font-weight: 640;
+    letter-spacing: -0.075em;
+    line-height: 0.93;
+  }
+
+  .dashboard-summary {
+    max-width: 34rem;
+    margin: 1.15rem auto 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(232, 238, 255, 0.74);
+  }
+
+  .card-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: rgba(240, 240, 255, 0.40);
+    text-transform: uppercase;
   }
 
   .section-label {
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    color: var(--text3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: rgba(240, 240, 255, 0.44);
     text-transform: uppercase;
   }
 
   .metric-value {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
+    font-size: 25px;
+    font-weight: 630;
+    letter-spacing: -0.055em;
     color: var(--text);
+    line-height: 1;
+  }
+
+  .card-subtitle {
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: rgba(232, 238, 255, 0.66);
   }
 
   .small-label {
     font-size: 11px;
     color: var(--text3);
+    letter-spacing: 0.01em;
+  }
+
+  .panel-surface {
+    background: linear-gradient(180deg, rgba(15, 20, 45, 0.92) 0%, rgba(9, 13, 31, 0.88) 100%);
+    border: 1px solid var(--border);
+  }
+
+  .panel-surface-soft {
+    background: linear-gradient(180deg, rgba(14, 19, 42, 0.88) 0%, rgba(9, 12, 28, 0.82) 100%);
+    border: 1px solid var(--border);
+  }
+
+  .app-navbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 40;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(8, 11, 27, 0.95) 0%, rgba(7, 10, 24, 0.90) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .app-navbar::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(173, 194, 255, 0.14) 16%, rgba(173, 194, 255, 0.08) 84%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.55rem;
+    min-height: 32px;
+    padding: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .brand-link:hover {
+    opacity: 0.92;
+  }
+
+  .brand-mark {
+    display: block;
+    width: clamp(28px, 2.6vw, 34px);
+    height: clamp(28px, 2.6vw, 34px);
+    object-fit: contain;
+  }
+
+  .brand-name {
+    color: rgba(245, 247, 255, 0.96);
+    font-size: clamp(1.55rem, 1.1rem + 0.8vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .sidebar-shell {
+    position: fixed;
+    z-index: 30;
+    border-color: rgba(255, 255, 255, 0.06);
+    background:
+      linear-gradient(180deg, rgba(9, 12, 30, 0.95) 0%, rgba(7, 9, 24, 0.90) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .sidebar-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 24%);
+    pointer-events: none;
+  }
+
+  .sidebar-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent 0%, rgba(178, 198, 255, 0.12) 18%, rgba(178, 198, 255, 0.06) 72%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* ── Micro-interaction utilities ───────────────────────── */
+  .card-interactive {
+    transition: border-color 200ms ease, transform 200ms ease, background-position 200ms ease;
+  }
+  .card-interactive:hover {
+    border-color: var(--border-strong) !important;
+    transform: translateY(-1px);
+  }
+
+  .row-hover {
+    transition: background 120ms ease;
+  }
+  .row-hover:hover {
+    background: var(--surface-2) !important;
+  }
+
+  /* ── Fade-up reveal animation ───────────────────────────── */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .fade-up-section   { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+  .fade-up-section-2 { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.13s both; }
+  .fade-up-section-3 { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up, .fade-up-section, .fade-up-section-2, .fade-up-section-3 {
+      animation: none;
+    }
+  }
+
+  /*
+   * ── Sidebar nav link states ──────────────────────────────
+   * All states live in CSS using data-active attribute.
+   * No inline style overrides needed → hover works correctly.
+   */
+  .nav-link {
+    position: relative;
+    isolation: isolate;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+    color: rgba(236, 242, 255, 0.44);
+    background: transparent;
+    letter-spacing: -0.01em;
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .nav-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, transparent 48%);
+    opacity: 0;
+    transition: opacity 180ms ease;
+    pointer-events: none;
+  }
+
+  .nav-link:hover {
+    color: rgba(246, 249, 255, 0.86);
+    border-color: rgba(152, 176, 255, 0.16);
+    background:
+      linear-gradient(180deg, rgba(128, 153, 255, 0.11) 0%, rgba(128, 153, 255, 0.035) 100%),
+      rgba(15, 20, 45, 0.26);
+  }
+
+  .nav-link:hover::before {
+    opacity: 0.75;
+  }
+
+  .nav-link[data-active='true'] {
+    color: var(--text);
+    font-weight: 560;
+    border-color: rgba(162, 184, 255, 0.22);
+    background:
+      linear-gradient(180deg, rgba(141, 167, 255, 0.18) 0%, rgba(100, 129, 231, 0.10) 100%),
+      rgba(18, 23, 51, 0.30);
+  }
+
+  .nav-link[data-active='true']::before {
+    opacity: 0.9;
+  }
+
+  .nav-link[data-active='true']:hover {
+    color: #f7f8ff;
+    border-color: rgba(170, 192, 255, 0.28);
+    background:
+      linear-gradient(180deg, rgba(145, 170, 255, 0.22) 0%, rgba(104, 133, 236, 0.13) 100%),
+      rgba(18, 23, 51, 0.34);
   }
 
   /* ── Scrollbar ──────────────────────────────────────────── */
@@ -151,5 +473,20 @@
   ::-webkit-scrollbar-thumb {
     background: var(--border-strong);
     border-radius: 3px;
+  }
+
+  @media (max-width: 767px) {
+    .dashboard-hero {
+      padding-inline: 0;
+    }
+
+    .dashboard-summary {
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .nav-link {
+      min-height: 42px;
+    }
   }
 }

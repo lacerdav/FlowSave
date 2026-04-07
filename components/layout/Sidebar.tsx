@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -17,26 +16,21 @@ export function Sidebar() {
 
   return (
     <aside
-      className="fixed left-0 top-14 h-[calc(100vh-56px)] w-[200px] flex flex-col py-4 overflow-y-auto"
-      style={{ borderRight: '1px solid var(--border)', background: 'var(--bg)' }}
+      className="sidebar-shell inset-x-0 top-14 border-b md:bottom-0 md:left-0 md:right-auto md:w-[220px] md:border-b-0 md:border-r"
     >
-      <nav className="flex flex-col gap-0.5 px-3">
+      <div aria-hidden className="sidebar-divider hidden md:block" />
+      <nav className="relative flex gap-2 overflow-x-auto px-4 py-3 md:flex-col md:gap-2 md:px-4 md:py-6">
         {navLinks.map(({ href, label }) => {
-          const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const isActive =
+            pathname === href ||
+            (href !== '/dashboard' && pathname.startsWith(href))
+
           return (
             <Link
               key={href}
               href={href}
-              className={cn(
-                'px-3 py-2 rounded-lg text-sm transition-colors',
-                isActive
-                  ? 'font-medium'
-                  : 'hover:bg-[var(--surface)]'
-              )}
-              style={{
-                color: isActive ? 'var(--accent2)' : 'var(--text2)',
-                background: isActive ? 'var(--accent-dim)' : undefined,
-              }}
+              data-active={isActive ? 'true' : undefined}
+              className="nav-link shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-[13px] md:justify-start"
             >
               {label}
             </Link>

@@ -24,6 +24,7 @@ with 2–10 clients and irregular payment dates.
 - AI: OpenRouter API (NOT direct Anthropic API — see AI section below)
 - Deploy: Vercel (Hobby for dev, Pro for commercial launch)
 - Analytics: PostHog (free tier)
+- Motion: CSS transitions + Framer Motion only where motion adds clarity
 
 ## Project structure
 /app              → Next.js App Router pages
@@ -83,11 +84,22 @@ Principles to follow on every component built:
 - Breathing room: generous padding and spacing. Cramped UIs feel cheap.
   When in doubt, add more space.
 
-- Consistent color semantics — never deviate:
+- Consistent color semantics — never deviate for data meaning:
     green  #22d87a  = received / positive / money already in
     blue   #7c96ff  = future / expected / money coming (--accent2)
     amber  #f5a623  = warning / lean months / needs attention
     red    #ff5b7f  = negative / danger / deficit
+
+- Atmospheric backgrounds may evolve as the user scrolls. The app should start
+  in deep navy and can gradually brighten into misty blue, silver-blue, and
+  near-white sections where appropriate. This brightening is environmental only,
+  not semantic. Never use light backgrounds to represent data states.
+
+- Motion is part of the product language. Use subtle, fluid motion inspired by
+  todesktop.com: layered parallax feeling, fade-up reveals, gentle section
+  transitions, and responsive hover states. Motion must clarify structure,
+  reward interaction, and make the interface feel alive. It must never feel
+  ornamental, slow, or distracting.
 
 - Micro-interactions matter: hover states, focus rings, transitions.
   Every interactive element must have a visible response. Nothing should
@@ -113,20 +125,31 @@ Principles to follow on every component built:
   stop and fix it before building the next one.
 
 ## Design system
-Reference: todesktop.com style (dark navy, refined, professional)
+Reference: todesktop.com style (dark-to-light atmospheric gradient, refined, fluid, premium)
+Detailed execution rules live in DESIGN.md. If DESIGN.md exists, it is the
+source of truth for visual implementation details.
 
 CSS variables (defined in globals.css):
-  --bg:            #07071a   page background
+  --bg:            #07071a   page background start
   --bg2:           #0d0d28   elevated surface
-  --surface:       rgba(255,255,255,0.04)   card fill
+  --bg3:           #151a3a   scroll-transition navy
+  --bg4:           #dfe7ff   bright atmospheric transition
+  --bg5:           #f7f9ff   near-white destination sections
+  --surface:       rgba(255,255,255,0.04)   dark card fill
+  --surface-2:     rgba(255,255,255,0.06)   elevated dark card fill
+  --surface-light: rgba(255,255,255,0.72)   bright section glass fill
   --border:        rgba(255,255,255,0.08)   default border
   --border-strong: rgba(255,255,255,0.14)   active/hover border
+  --border-light:  rgba(15,23,42,0.08)      border on bright sections
   --accent:        #5b7fff   primary CTA blue
   --accent2:       #7c96ff   accent text / future payments
   --accent-dim:    rgba(91,127,255,0.15)    accent backgrounds
-  --text:          #f0f0ff   primary text
-  --text2:         rgba(240,240,255,0.55)   secondary text
-  --text3:         rgba(240,240,255,0.30)   labels/hints
+  --text:          #f0f0ff   primary text on dark
+  --text2:         rgba(240,240,255,0.55)   secondary text on dark
+  --text3:         rgba(240,240,255,0.30)   labels/hints on dark
+  --text-dark:     #101426   primary text on bright sections
+  --text-dark-2:   rgba(16,20,38,0.68)      secondary text on bright sections
+  --text-dark-3:   rgba(16,20,38,0.42)      metadata on bright sections
   --green:         #22d87a   income, positive, received
   --green-dim:     rgba(34,216,122,0.12)
   --red:           #ff5b7f   danger, negative, deficit
@@ -136,11 +159,11 @@ CSS variables (defined in globals.css):
 
 Typography:
   Font stack: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif
-  Page title:    20px / weight 600 / letter-spacing -0.3px / color --text
-  Section label: 11px / weight 400 / letter-spacing 0.08em / --text3 / UPPERCASE
-  Body:          13px / weight 400 / color --text2
+  Page title:    20px / weight 600 / letter-spacing -0.3px
+  Section label: 11px / weight 400 / letter-spacing 0.08em / UPPERCASE
+  Body:          13px / weight 400
   Metric values: 22px / weight 600 / letter-spacing -0.5px
-  Small labels:  11px / color --text3
+  Small labels:  11px
 
 Layout:
   Navbar: fixed top, semi-transparent, blur backdrop, height ~56px
@@ -150,6 +173,7 @@ Layout:
   Mid section: 2-column (chart wider + payments list)
   Bottom: 2-column (reserve card + forecast)
   Card radius: 12px | Button radius: 8px | Nav links: 8px
+  Long pages may transition from dark hero/top sections to brighter lower sections.
 
 Chart style:
   Historical bars: rgba(91,127,255,0.15) fill, rgba(91,127,255,0.25) border
@@ -158,11 +182,13 @@ Chart style:
   Average line:   dashed --amber, 1px
 
 DO NOT use:
-  - Light or white backgrounds inside the app (auth page is the exception)
+  - Harsh pure white blocks floating abruptly on dark sections
+  - Light backgrounds for semantic meaning of data states
   - Inter, Roboto, or system-ui fonts
-  - Box-shadows (use borders instead)
+  - Heavy shadows or material-style elevation
   - Purple gradient aesthetics
   - UUIDs or raw database values anywhere visible
+  - Motion that delays usability or reduces clarity
 
 ## Feature scope (phases — no time estimate, one phase at a time)
 
@@ -183,6 +209,26 @@ DO NOT use:
   [ ] Salary target progress bar
   [ ] Empty state amber banner with CTAs
   [ ] Onboarding wizard (3 steps + skip logic)
+
+### Phase 2.1 — Refinement (COMPLETE)
+  [x] Metric cards hierarchy polish
+  [x] Dashboard spacing and layout refinement
+  [x] Chart proportion and clarity improvements
+  [x] Multi-currency display clarity
+  [x] Pending card empty state redesign
+  [x] Salary progress UX improvement
+  [x] Micro-interactions across dashboard
+  [x] Atmospheric background system (dark → light)
+
+### Phase 2.2 — Premium UI Evolution (IN PROGRESS)
+  Visual approval pending — do not mark this phase complete until the updated UI is approved in-browser.
+  [x] Atmospheric gradient system (true dark → light progression)
+  [x] Typography refinement (reduce "AI feel")
+  [x] Dashboard header redesign
+  [x] Sidebar premium interaction (glow + active state)
+  [x] Visual hierarchy consistency across dashboard
+  [x] Motion system (subtle reveal + transitions)
+  [ ] Mobile validation at 375px
 
 ### Phase 3 — Intelligence
   [ ] Projects: form + list (status: pending/confirmed/received/cancelled)
@@ -211,6 +257,7 @@ DO NOT use:
 - Server components default; 'use client' only when strictly required
 - All Supabase queries → /lib/supabase/queries/ helpers
 - All OpenRouter calls → /lib/ai/openrouter.ts only
+- All visual implementation details must follow DESIGN.md when present
 - No hardcoded secrets — process.env.* always
 - One component per file, named exports
 - No over-engineering — no abstractions not yet needed
@@ -248,7 +295,8 @@ deploy:    git push origin main
 1. Works end-to-end in browser
 2. Empty, loading, and error states handled and visually designed
 3. Responsive at 375px minimum
-4. Design system applied: dark theme, CSS vars, correct typography
-5. Color semantics respected: green/blue/amber/red used correctly
-6. No raw data (UUIDs, field names) visible anywhere in the UI
-7. npx tsc --noEmit passes with zero errors
+4. Design system applied: dark theme plus atmospheric dark-to-light transitions where appropriate, CSS vars, correct typography
+5. Color semantics respected: green/blue/amber/red used only for data meaning, never confused with environmental gradients
+6. Motion is fluid, subtle, and purposeful
+7. No raw data (UUIDs, field names) visible anywhere in the UI
+8. npx tsc --noEmit passes with zero errors

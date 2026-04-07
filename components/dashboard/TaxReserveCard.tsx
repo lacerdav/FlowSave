@@ -13,40 +13,49 @@ interface TaxReserveCardProps {
   taxPct: number
 }
 
-export function TaxReserveCard({
-  items,
-  taxPct,
-}: TaxReserveCardProps) {
+export function TaxReserveCard({ items, taxPct }: TaxReserveCardProps) {
   const totalsByCurrency = items.reduce((map, item) => {
     map.set(item.currency, (map.get(item.currency) ?? 0) + item.reserveAmount)
     return map
   }, new Map<string, number>())
 
   const totalReserveLabel = Array.from(totalsByCurrency.entries())
-    .map(([itemCurrency, total]) => {
-      const roundedTotal = Math.round(total * 100) / 100
-      return formatCurrency(roundedTotal, itemCurrency)
-    })
+    .map(([itemCurrency, total]) => formatCurrency(Math.round(total * 100) / 100, itemCurrency))
     .join(' + ')
 
   return (
     <div
-      className="rounded-xl p-5"
+      className="panel-surface card-interactive rounded-xl p-6"
       style={{
-        background: 'var(--surface)',
         border: '1px solid var(--border)',
       }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <p className="section-label">Tax Reserve</p>
-        <span className="text-xs" style={{ color: 'var(--text3)' }}>
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <p className="card-label">Tax Reserve</p>
+          <p className="card-subtitle" style={{ marginTop: 4 }}>
+            Set aside {taxPct}% per payment
+          </p>
+        </div>
+        <span
+          style={{
+            fontSize: 11,
+            color: 'var(--text3)',
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '2px 8px',
+          }}
+        >
           {taxPct}% rate
         </span>
       </div>
 
       {items.length === 0 ? (
-        <p style={{ color: 'var(--text3)', fontSize: 13 }}>
-          No payments logged this month
+        <p style={{ color: 'var(--text2)', fontSize: 13, lineHeight: 1.6 }}>
+          No payments logged this month.
+          <br />
+          <span style={{ fontSize: 12 }}>Reserve will appear here once you log income.</span>
         </p>
       ) : (
         <>
@@ -56,23 +65,18 @@ export function TaxReserveCard({
                 key={item.id}
                 className="flex items-center justify-between py-2.5"
                 style={{
-                  borderBottom:
-                    i < items.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span
-                    style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}
-                  >
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
                     {item.clientName}
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--text3)' }}>
                     {formatCurrency(item.amountReceived, item.currency)} received
                   </span>
                 </div>
-                <span
-                  style={{ fontSize: 13, fontWeight: 500, color: 'var(--amber)' }}
-                >
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--amber)', letterSpacing: '-0.2px' }}>
                   {formatCurrency(item.reserveAmount, item.currency)}
                 </span>
               </div>
@@ -80,13 +84,13 @@ export function TaxReserveCard({
           </div>
 
           <div
-            className="flex items-center justify-between pt-3 mt-1"
+            className="flex items-center justify-between pt-4 mt-2"
             style={{ borderTop: '1px solid var(--border-strong)' }}
           >
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text2)' }}>
+            <span style={{ fontSize: 12, color: 'var(--text3)' }}>
               Total reserve this month
             </span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--green)' }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--green)', letterSpacing: '-0.3px' }}>
               {totalReserveLabel}
             </span>
           </div>

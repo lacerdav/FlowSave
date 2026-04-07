@@ -59,8 +59,8 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl p-5 space-y-4"
-      style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
+      className="panel-surface-soft rounded-xl p-5 space-y-4"
+      style={{ border: '1px solid var(--border)' }}
     >
       <p className="section-label">Add client</p>
 

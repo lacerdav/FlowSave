@@ -23,6 +23,18 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${d.getMonth()}`
 }
 
+/** Aggregates amounts per currency and returns a human-readable label.
+ *  e.g. "R$400.00 + $64.60" or "$0.00" when empty */
+function multiCurrencyLabel(
+  map: Map<string, number>,
+  fallbackCurrency = 'USD',
+): string {
+  if (map.size === 0) return formatCurrency(0, fallbackCurrency)
+  return Array.from(map.entries())
+    .map(([cur, total]) => formatCurrency(Math.round(total * 100) / 100, cur))
+    .join(' + ')
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -68,28 +80,51 @@ export default async function DashboardPage() {
   const monthStart = new Date(cy, cm, 1).toISOString().split('T')[0]
   const monthEnd   = new Date(cy, cm + 1, 0).toISOString().split('T')[0]
 
-  // ── Client lookup: id → { name, color } ─────────────────────────────────────
-  const clientMap = new Map<string, { name: string; color: string }>(
-    clients.map((c, i) => [c.id, { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length] }])
+  // ── Client lookup: id → { name, color, currency } ───────────────────────────
+  const clientMap = new Map<string, { name: string; color: string; currency: string }>(
+    clients.map((c, i) => [
+      c.id,
+      { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length], currency: c.currency },
+    ])
   )
+
+  // ── Primary (dominant) currency for single-currency contexts ────────────────
+  const primaryCurrency = payments[0]?.currency ?? 'USD'
 
   // ── Current month payments ───────────────────────────────────────────────────
   const currentMonthPmts = payments.filter(
     p => p.received_at >= monthStart && p.received_at <= monthEnd
   )
 
-  // ── Metric card values ───────────────────────────────────────────────────────
-  const totalThisMonth = currentMonthPmts.reduce((s, p) => s + p.amount, 0)
-  const taxReserve     = totalThisMonth * (settings.tax_reserve_pct / 100)
-  const salaryGap      = settings.target_monthly_salary - totalThisMonth
-  const pendingCount   = projects.filter(
-    p => p.status === 'pending' || p.status === 'confirmed'
-  ).length
-  const pendingAmount  = projects
-    .filter(p => p.status === 'pending' || p.status === 'confirmed')
-    .reduce((s, p) => s + p.expected_amount, 0)
+  // ── Per-currency aggregates for this month ──────────────────────────────────
+  const monthByCurrency = currentMonthPmts.reduce((map, p) => {
+    map.set(p.currency, (map.get(p.currency) ?? 0) + p.amount)
+    return map
+  }, new Map<string, number>())
 
-  // Last month total for delta
+  const totalThisMonth = currentMonthPmts.reduce((s, p) => s + p.amount, 0)
+
+  // ── Tax reserve per currency ────────────────────────────────────────────────
+  const taxByCurrency = new Map<string, number>()
+  for (const [cur, total] of monthByCurrency) {
+    taxByCurrency.set(cur, total * (settings.tax_reserve_pct / 100))
+  }
+
+  // ── Salary gap (primary currency — target has no currency field) ─────────────
+  const salaryGap = settings.target_monthly_salary - totalThisMonth
+
+  // ── Pending projects ─────────────────────────────────────────────────────────
+  const pendingProjects = projects.filter(
+    p => p.status === 'pending' || p.status === 'confirmed'
+  )
+  const pendingCount = pendingProjects.length
+  const pendingByCurrency = pendingProjects.reduce((map, p) => {
+    const cur = p.client_id ? (clientMap.get(p.client_id)?.currency ?? 'USD') : 'USD'
+    map.set(cur, (map.get(cur) ?? 0) + p.expected_amount)
+    return map
+  }, new Map<string, number>())
+
+  // ── Last month delta ─────────────────────────────────────────────────────────
   const lmStart = new Date(cy, cm - 1, 1).toISOString().split('T')[0]
   const lmEnd   = new Date(cy, cm, 0).toISOString().split('T')[0]
   const lastMonthTotal = payments
@@ -173,22 +208,34 @@ export default async function DashboardPage() {
     }
   })
 
-  // ── Dominant currency (first payment, fallback USD) ───────────────────────────
-  const currency = payments[0]?.currency ?? 'USD'
-
   // ── Empty state banner ───────────────────────────────────────────────────────
   const showEmptyBanner =
     settings.onboarding_completed &&
     ((clientCount ?? 0) === 0 || (paymentCount ?? 0) === 0)
 
-  return (
-    <div className="space-y-6">
-      <h1 className="page-title">Dashboard</h1>
+  // ── Metric labels ────────────────────────────────────────────────────────────
+  const monthTotalLabel = multiCurrencyLabel(monthByCurrency, primaryCurrency)
+  const taxTotalLabel   = multiCurrencyLabel(taxByCurrency, primaryCurrency)
+  const pendingLabel    = pendingCount > 0
+    ? multiCurrencyLabel(pendingByCurrency, primaryCurrency)
+    : ''
 
-      {/* Empty state banner */}
+  return (
+    <div className="space-y-10 pb-20">
+      <div className="fade-up dashboard-hero">
+        <p className="page-subtitle page-kicker">
+          Overview
+        </p>
+        <h1 className="dashboard-anchor page-title-gradient mt-5">Dashboard</h1>
+        <p className="dashboard-summary">
+          A clear view of what arrived, what is still pending, and how this month is
+          tracking against the target you set.
+        </p>
+      </div>
+
       {showEmptyBanner && (
         <div
-          className="rounded-xl p-4 flex flex-wrap gap-x-3 gap-y-1 items-center"
+          className="fade-up mx-auto flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-5 py-4"
           style={{
             background: 'var(--amber-dim)',
             border: '1px solid var(--amber)',
@@ -218,56 +265,68 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Metric cards — 2×2 on mobile, 4 columns on lg */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="fade-up-section grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           label="This Month"
-          value={formatCurrency(totalThisMonth, currency)}
+          value={monthTotalLabel}
           subtitle={
             monthDeltaPct !== null
               ? `${monthDeltaPct >= 0 ? '+' : ''}${monthDeltaPct}% vs last month`
-              : ''
+              : undefined
           }
           subtitleColor={
             monthDeltaPct !== null && monthDeltaPct >= 0
               ? 'var(--green)'
               : monthDeltaPct !== null
               ? 'var(--red)'
-              : 'var(--text3)'
+              : undefined
           }
         />
         <MetricCard
           label="Tax Reserve"
-          value={formatCurrency(taxReserve, currency)}
-          valueColor="var(--green)"
+          value={taxTotalLabel}
+          valueColor="var(--amber)"
           subtitle={`${settings.tax_reserve_pct}% of received`}
         />
         <MetricCard
           label="Salary Gap"
           value={
             salaryGap <= 0
-              ? `+${formatCurrency(Math.abs(salaryGap), currency)} surplus`
-              : `${formatCurrency(salaryGap, currency)} short`
+              ? `+${formatCurrency(Math.abs(salaryGap), primaryCurrency)}`
+              : formatCurrency(salaryGap, primaryCurrency)
           }
           valueColor={salaryGap <= 0 ? 'var(--green)' : 'var(--red)'}
-          subtitle={`Target: ${formatCurrency(settings.target_monthly_salary, currency)}`}
+          subtitle={
+            salaryGap <= 0
+              ? 'Surplus this month'
+              : `${formatCurrency(settings.target_monthly_salary, primaryCurrency)} target`
+          }
         />
         <MetricCard
           label="Pending"
-          value={formatCurrency(pendingAmount, currency)}
-          valueColor="var(--amber)"
-          subtitle={`${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}`}
+          value={pendingLabel}
+          valueColor="var(--accent2)"
+          subtitle={
+            pendingCount > 0
+              ? `${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}`
+              : undefined
+          }
+          isEmpty={pendingCount === 0}
+          emptyMessage="No upcoming payments"
+          emptyAction={
+            <Link href="/projects" style={{ color: 'var(--accent2)' }}>
+              Add a project →
+            </Link>
+          }
         />
       </div>
 
-      {/* Chart + Recent payments — chart wider on lg */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      <div className="fade-up-section-2 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
         <CashFlowChart bars={chartBars} averageLine={averageLine} />
         <RecentPayments payments={recentPayments} />
       </div>
 
-      {/* Tax reserve + Salary progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="fade-up-section-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TaxReserveCard
           items={taxItems}
           taxPct={settings.tax_reserve_pct}
@@ -275,7 +334,7 @@ export default async function DashboardPage() {
         <SalaryProgress
           received={totalThisMonth}
           target={settings.target_monthly_salary}
-          currency={currency}
+          currency={primaryCurrency}
         />
       </div>
     </div>

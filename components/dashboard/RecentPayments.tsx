@@ -1,3 +1,7 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export interface PaymentItem {
@@ -15,63 +19,76 @@ interface RecentPaymentsProps {
 }
 
 export function RecentPayments({ payments }: RecentPaymentsProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+
   return (
     <div
-      className="rounded-xl p-5 flex flex-col"
+      className="panel-surface card-interactive rounded-xl p-5 flex flex-col"
       style={{
-        background: 'var(--surface)',
         border: '1px solid var(--border)',
         minHeight: 260,
       }}
     >
-      <p className="section-label mb-4">Recent Payments</p>
+      <div className="mb-4">
+        <p className="card-label">Recent Payments</p>
+      </div>
 
       {payments.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p style={{ color: 'var(--text3)', fontSize: 13 }}>No payments yet</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
+          <p style={{ color: 'var(--text2)', fontSize: 13 }}>No payments yet</p>
+          <Link
+            href="/payments"
+            style={{ fontSize: 12, color: 'var(--accent2)' }}
+          >
+            Log your first payment →
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col">
           {payments.map((p, i) => (
             <div
               key={p.id}
-              className="flex items-center gap-3 py-2.5"
+              className="row-hover flex items-center gap-3 py-2.5 px-1 rounded-lg -mx-1"
               style={{
                 borderBottom:
                   i < payments.length - 1 ? '1px solid var(--border)' : 'none',
               }}
+              onMouseEnter={() => setHoveredId(p.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              {/* Client color dot */}
               <div
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ background: p.clientColor }}
               />
 
-              {/* Client name */}
               <span
                 className="flex-1 truncate"
-                style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}
+                style={{
+                  fontSize: 13.5,
+                  fontWeight: 500,
+                  color: hoveredId === p.id ? '#f8f9ff' : 'var(--text)',
+                  transition: 'color 120ms ease',
+                }}
               >
                 {p.clientName}
               </span>
 
-              {/* Amount */}
               <span
                 style={{
                   fontSize: 13,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: p.isPast ? 'var(--green)' : 'var(--accent2)',
+                  letterSpacing: '-0.2px',
                 }}
               >
                 {formatCurrency(p.amount, p.currency)}
               </span>
 
-              {/* Date */}
               <span
                 style={{
                   fontSize: 11,
                   color: 'var(--text3)',
-                  minWidth: 56,
+                  minWidth: 44,
                   textAlign: 'right',
                   flexShrink: 0,
                 }}

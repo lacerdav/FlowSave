@@ -58,10 +58,10 @@ export function PaymentList({ payments, clients, onDelete, deletingId }: Props) 
   if (payments.length === 0) {
     return (
       <div
-        className="rounded-xl p-8 text-center"
-        style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
+        className="panel-surface rounded-xl p-8 text-center"
+        style={{ border: '1px solid var(--border)' }}
       >
-        <p className="text-sm" style={{ color: 'var(--text3)' }}>
+        <p style={{ color: 'var(--text2)', fontSize: 13 }}>
           No payments logged yet. Add your first payment above.
         </p>
       </div>
@@ -76,14 +76,14 @@ export function PaymentList({ payments, clients, onDelete, deletingId }: Props) 
         <div key={group.key}>
           {/* Month header */}
           <p
-            className="mb-2 px-1 text-xs font-medium tracking-widest uppercase"
+            className="mb-2 px-1 text-[10px] font-semibold tracking-[0.16em] uppercase"
             style={{ color: 'var(--text3)' }}
           >
             {group.label}
           </p>
 
           <div
-            className="rounded-xl overflow-hidden"
+            className="panel-surface rounded-xl overflow-hidden"
             style={{ border: '1px solid var(--border)' }}
           >
             {group.payments.map((payment, i) => {
@@ -97,38 +97,36 @@ export function PaymentList({ payments, clients, onDelete, deletingId }: Props) 
               return (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between px-5 py-3.5"
+                  className="row-hover flex items-center justify-between px-5 py-4"
                   style={{
-                    background: 'var(--bg2)',
+                    background: isHovered ? 'rgba(255, 255, 255, 0.07)' : 'transparent',
                     borderBottom: !isLast ? '1px solid var(--border)' : undefined,
                   }}
                   onMouseEnter={() => setHoveredId(payment.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Left: dot + client name + optional notes */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ background: 'var(--green)' }}
                     />
                     <div className="min-w-0">
-                      <p className="truncate font-medium" style={{ fontSize: '14px', color: 'var(--text)' }}>
+                      <p className="truncate font-medium" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
                         {clientName}
                       </p>
                       {payment.notes && (
-                        <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text3)' }}>
+                        <p className="mt-0.5 truncate text-[11px]" style={{ color: 'var(--text3)' }}>
                           {payment.notes}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* Right: amount + date + remove */}
                   <div className="flex items-center gap-4 flex-shrink-0 ml-4">
                     <span className="text-sm font-semibold tabular-nums" style={{ color: future ? 'var(--accent2)' : 'var(--green)' }}>
                       {formatCurrency(payment.amount, payment.currency)}
                     </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text2)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.01em' }}>
                       {formatDate(payment.received_at)}
                     </span>
                     <button
