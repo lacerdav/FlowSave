@@ -121,7 +121,7 @@ export default async function DashboardPage() {
   const pendingCount = pendingProjects.length
   const pendingByCurrency = pendingProjects.reduce((map, p) => {
     const cur = p.client_id ? (clientMap.get(p.client_id)?.currency ?? 'USD') : 'USD'
-    map.set(cur, (map.get(cur) ?? 0) + p.expected_amount)
+    map.set(cur, (map.get(cur) ?? 0) + (p.expected_amount ?? 0))
     return map
   }, new Map<string, number>())
 

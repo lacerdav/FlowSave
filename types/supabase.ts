@@ -69,6 +69,7 @@ export type Database = {
           currency: string
           received_at: string
           notes: string | null
+          project_id: string | null
           created_at: string
         }
         Insert: {
@@ -79,6 +80,7 @@ export type Database = {
           currency?: string
           received_at: string
           notes?: string | null
+          project_id?: string | null
           created_at?: string
         }
         Update: {
@@ -89,6 +91,7 @@ export type Database = {
           currency?: string
           received_at?: string
           notes?: string | null
+          project_id?: string | null
           created_at?: string
         }
         Relationships: []
@@ -99,9 +102,11 @@ export type Database = {
           user_id: string
           client_id: string | null
           name: string
-          expected_amount: number
-          expected_date: string
+          expected_amount: number | null
+          expected_date: string | null
           status: 'pending' | 'confirmed' | 'received' | 'cancelled'
+          sub_status: 'prospecting' | 'negotiating' | null
+          linked_payment_id: string | null
           created_at: string
         }
         Insert: {
@@ -109,9 +114,11 @@ export type Database = {
           user_id: string
           client_id?: string | null
           name: string
-          expected_amount: number
-          expected_date: string
+          expected_amount?: number | null
+          expected_date?: string | null
           status?: 'pending' | 'confirmed' | 'received' | 'cancelled'
+          sub_status?: 'prospecting' | 'negotiating' | null
+          linked_payment_id?: string | null
           created_at?: string
         }
         Update: {
@@ -119,9 +126,11 @@ export type Database = {
           user_id?: string
           client_id?: string | null
           name?: string
-          expected_amount?: number
-          expected_date?: string
+          expected_amount?: number | null
+          expected_date?: string | null
           status?: 'pending' | 'confirmed' | 'received' | 'cancelled'
+          sub_status?: 'prospecting' | 'negotiating' | null
+          linked_payment_id?: string | null
           created_at?: string
         }
         Relationships: []

@@ -44,10 +44,11 @@ export function computeForecast(
     const confirmed = projects
       .filter(p => {
         if (p.status !== 'confirmed') return false
+        if (!p.expected_date) return false
         const d = new Date(p.expected_date + 'T00:00:00')
         return d.getFullYear() === fy && d.getMonth() === fm
       })
-      .reduce((sum, p) => sum + p.expected_amount, 0)
+      .reduce((sum, p) => sum + (p.expected_amount ?? 0), 0)
 
     result.push({
       month: forecastDate,

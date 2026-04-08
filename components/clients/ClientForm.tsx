@@ -59,9 +59,15 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
   return (
     <form
       onSubmit={handleSubmit}
-      className="panel-surface-soft rounded-[18px] p-6 space-y-5"
+      className="panel-surface-soft card-interactive rounded-[18px] p-6 space-y-5"
     >
-      <p className="section-label">Add client</p>
+      <div className="form-card-header">
+        <p className="section-label">Add client</p>
+        <h2 className="form-card-title">Create a client card</h2>
+        <p className="form-card-copy">
+          Keep client records as polished as the Projects page, with stronger hierarchy and cleaner spacing.
+        </p>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 space-y-1.5">
@@ -74,35 +80,35 @@ export function ClientForm({ onAdd, onLimitReached, plan, clientCount }: Props) 
             onChange={(e) => setName(e.target.value)}
             required
             disabled={loading}
+            className="payment-control"
           />
         </div>
 
         <div className="w-full sm:w-36 space-y-1.5">
           <Label htmlFor="currency" className="form-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-            <SelectTrigger>
+            <SelectTrigger className="payment-control">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="payment-select-content">
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="BRL">BRL</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
-        <div className="flex items-end">
-          <Button
-            type="submit"
-            disabled={loading || !name}
-            className="h-11 px-5 font-medium whitespace-nowrap"
-            style={{ background: 'var(--accent)', color: '#fff' }}
-          >
-            {loading ? 'Adding…' : 'Add client'}
-          </Button>
-        </div>
       </div>
 
       {error && <p className="text-xs" style={{ color: 'var(--red)' }}>{error}</p>}
+
+      <div className="form-cta-row" data-align="center">
+        <Button
+          type="submit"
+          disabled={loading || !name}
+          className="primary-cta-button h-11 min-w-[12rem] px-6 font-medium whitespace-nowrap"
+        >
+          {loading ? 'Adding…' : 'Add client'}
+        </Button>
+      </div>
     </form>
   )
 }

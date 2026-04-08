@@ -1,8 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { calcFloatPos } from '@/lib/floating'
+import type { FloatStyle } from '@/lib/floating'
+
+// Approximate panel dimensions for collision detection.
+// Panel CSS: width min(20rem,100vw-2rem) and ~340px tall (header + weekdays + 6-row grid + padding).
+const PANEL_HEIGHT = 344
+const PANEL_WIDTH  = 320
 
 interface DatePickerProps {
   id?: string
@@ -12,9 +20,11 @@ interface DatePickerProps {
   className?: string
 }
 
-function parseDate(value: string) {
+function parseDate(value: string): Date | null {
+  if (!value) return null
   const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day)
+  const d = new Date(year, month - 1, day)
+  return isNaN(d.getTime()) ? null : d
 }
 
 function formatDateValue(date: Date) {
@@ -24,8 +34,10 @@ function formatDateValue(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function formatDateLabel(value: string) {
-  return parseDate(value).toLocaleDateString('en-US', {
+function formatDateLabel(value: string): string {
+  const d = parseDate(value)
+  if (!d) return 'Pick a date'
+  return d.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -62,43 +74,74 @@ export function DatePicker({
   disabled,
   className,
 }: DatePickerProps) {
-  const rootRef = useRef<HTMLDivElement | null>(null)
+  const rootRef  = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
   const [open, setOpen] = useState(false)
-  const [monthCursor, setMonthCursor] = useState(() => parseDate(value))
+  const [mounted, setMounted] = useState(false)
+  const [panelStyle, setPanelStyle] = useState<FloatStyle>({ position: 'fixed' })
+  const [openUpward, setOpenUpward] = useState(false)
+  const [monthCursor, setMonthCursor] = useState(() => parseDate(value) ?? new Date())
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!open) {
-      setMonthCursor(parseDate(value))
+      setMonthCursor(parseDate(value) ?? new Date())
     }
   }, [open, value])
+
+  const recalcPos = useCallback(() => {
+    if (!rootRef.current) return
+    const trigger = rootRef.current.getBoundingClientRect()
+    const panelW = Math.min(PANEL_WIDTH, window.innerWidth - 32)
+    const { style, openUpward: up } = calcFloatPos(trigger, PANEL_HEIGHT, panelW, 'left')
+    setPanelStyle(style)
+    setOpenUpward(up)
+  }, [])
 
   useEffect(() => {
     if (!open) return
 
+    recalcPos()
+
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (
+        !rootRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      ) {
         setOpen(false)
       }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false)
-      }
+      if (event.key === 'Escape') setOpen(false)
     }
+
+    // Close + reposition on scroll/resize to avoid stale coordinates
+    function handleScroll() { setOpen(false) }
+    function handleResize() { recalcPos() }
 
     document.addEventListener('pointerdown', handlePointerDown)
     document.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', handleResize)
 
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', handleResize)
     }
-  }, [open])
+  }, [open, recalcPos])
 
   const selectedDate = parseDate(value)
   const today = new Date()
   const days = getCalendarDays(monthCursor)
+
+  function isSelected(date: Date) {
+    return selectedDate != null && isSameDay(date, selectedDate)
+  }
 
   function handleSelect(date: Date) {
     onChange(formatDateValue(date))
@@ -108,6 +151,73 @@ export function DatePicker({
   function moveMonth(offset: number) {
     setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1))
   }
+
+  const panel = open ? (
+    <div
+      ref={panelRef}
+      className="date-picker-panel-portal"
+      role="dialog"
+      aria-label="Choose date"
+      style={panelStyle}
+      // Animate direction matches resolved open direction
+      data-open-upward={openUpward ? 'true' : 'false'}
+    >
+      <div className="date-picker-header">
+        <button
+          type="button"
+          className="date-picker-nav"
+          onClick={() => moveMonth(-1)}
+          aria-label="Previous month"
+        >
+          <ChevronLeftIcon className="size-4" />
+        </button>
+        <p className="date-picker-month">
+          {monthCursor.toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+        <button
+          type="button"
+          className="date-picker-nav"
+          onClick={() => moveMonth(1)}
+          aria-label="Next month"
+        >
+          <ChevronRightIcon className="size-4" />
+        </button>
+      </div>
+
+      <div className="date-picker-weekdays">
+        {WEEKDAY_LABELS.map((label) => (
+          <span key={label} className="date-picker-weekday">
+            {label}
+          </span>
+        ))}
+      </div>
+
+      <div className="date-picker-grid">
+        {days.map((date) => {
+          const isOutsideMonth = date.getMonth() !== monthCursor.getMonth()
+          const isDaySelected = isSelected(date)
+          const isToday = isSameDay(date, today)
+
+          return (
+            <button
+              key={date.toISOString()}
+              type="button"
+              className="date-picker-day"
+              data-outside={isOutsideMonth ? 'true' : 'false'}
+              data-selected={isDaySelected ? 'true' : 'false'}
+              data-today={isToday ? 'true' : 'false'}
+              onClick={() => handleSelect(date)}
+            >
+              {date.getDate()}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  ) : null
 
   return (
     <div ref={rootRef} className={cn('date-picker', className)}>
@@ -125,64 +235,7 @@ export function DatePicker({
         <span className="date-picker-trigger-value">{formatDateLabel(value)}</span>
       </button>
 
-      {open && (
-        <div className="date-picker-panel" role="dialog" aria-label="Choose date">
-          <div className="date-picker-header">
-            <button
-              type="button"
-              className="date-picker-nav"
-              onClick={() => moveMonth(-1)}
-              aria-label="Previous month"
-            >
-              <ChevronLeftIcon className="size-4" />
-            </button>
-            <p className="date-picker-month">
-              {monthCursor.toLocaleDateString('en-US', {
-                month: 'long',
-                year: 'numeric',
-              })}
-            </p>
-            <button
-              type="button"
-              className="date-picker-nav"
-              onClick={() => moveMonth(1)}
-              aria-label="Next month"
-            >
-              <ChevronRightIcon className="size-4" />
-            </button>
-          </div>
-
-          <div className="date-picker-weekdays">
-            {WEEKDAY_LABELS.map((label) => (
-              <span key={label} className="date-picker-weekday">
-                {label}
-              </span>
-            ))}
-          </div>
-
-          <div className="date-picker-grid">
-            {days.map((date) => {
-              const isOutsideMonth = date.getMonth() !== monthCursor.getMonth()
-              const isSelected = isSameDay(date, selectedDate)
-              const isToday = isSameDay(date, today)
-
-              return (
-                <button
-                  key={date.toISOString()}
-                  type="button"
-                  className="date-picker-day"
-                  data-outside={isOutsideMonth ? 'true' : 'false'}
-                  data-selected={isSelected ? 'true' : 'false'}
-                  data-today={isToday ? 'true' : 'false'}
-                  onClick={() => handleSelect(date)}
-                >
-                  {date.getDate()}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {mounted ? createPortal(panel, document.body) : null}
     </div>
   )
 }

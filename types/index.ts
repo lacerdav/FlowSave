@@ -9,6 +9,8 @@ export type Settings = Database['public']['Tables']['settings']['Row']
 export type Plan = 'free' | 'pro'
 export type Currency = 'USD' | 'BRL'
 export type ProjectStatus = 'pending' | 'confirmed' | 'received' | 'cancelled'
+export type EditableProjectStatus = 'pending' | 'confirmed'
+export type ProjectSubStatus = 'prospecting' | 'negotiating'
 
 export interface ForecastMonth {
   month: Date

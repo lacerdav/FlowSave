@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Client, Project, ProjectStatus } from '@/types'
+import type { Client, EditableProjectStatus, Project, ProjectStatus, ProjectSubStatus } from '@/types'
 
 interface ProjectFormValues {
   name: string
@@ -14,32 +14,46 @@ interface ProjectFormValues {
   expected_amount: string
   expected_date: string
   status: ProjectStatus
+  sub_status: ProjectSubStatus | null
 }
 
 interface Props {
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
   editing: Project | null
   onSave: (
-    values: Omit<ProjectFormValues, 'expected_amount'> & { expected_amount: number },
+    values: Omit<ProjectFormValues, 'expected_amount' | 'expected_date'> & {
+      expected_amount: number | null
+      expected_date: string | null
+    },
     editingId: string | null
   ) => Promise<void>
   onCancel: () => void
+  surface?: 'panel' | 'none'
+  showHeader?: boolean
+  initialValues?: Partial<ProjectFormValues>
+  submitLabel?: string
+  title?: string
+  description?: string
 }
 
-const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
+const STATUS_OPTIONS: { value: EditableProjectStatus; label: string }[] = [
   { value: 'pending',   label: 'Pending' },
   { value: 'confirmed', label: 'Confirmed' },
-  { value: 'received',  label: 'Received' },
-  { value: 'cancelled', label: 'Cancelled' },
 ]
 
-function blankState(): ProjectFormValues {
+const SUB_STATUS_OPTIONS: { value: ProjectSubStatus; label: string }[] = [
+  { value: 'prospecting', label: 'Prospecting' },
+  { value: 'negotiating', label: 'Negotiating' },
+]
+
+function blankState(initialValues?: Partial<ProjectFormValues>): ProjectFormValues {
   return {
-    name: '',
-    client_id: null,
-    expected_amount: '',
-    expected_date: new Date().toISOString().split('T')[0],
-    status: 'pending',
+    name: initialValues?.name ?? '',
+    client_id: initialValues?.client_id ?? null,
+    expected_amount: initialValues?.expected_amount ?? '',
+    expected_date: initialValues?.expected_date ?? '',
+    status: initialValues?.status ?? 'pending',
+    sub_status: initialValues?.sub_status ?? 'prospecting',
   }
 }
 
@@ -47,25 +61,37 @@ function fromProject(p: Project): ProjectFormValues {
   return {
     name: p.name,
     client_id: p.client_id,
-    expected_amount: String(p.expected_amount),
-    expected_date: p.expected_date,
+    expected_amount: p.expected_amount != null ? String(p.expected_amount) : '',
+    expected_date: p.expected_date ?? '',
     status: p.status,
+    sub_status: p.sub_status ?? 'prospecting',
   }
 }
 
-export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
+export function ProjectForm({
+  clients,
+  editing,
+  onSave,
+  onCancel,
+  surface = 'panel',
+  showHeader = true,
+  initialValues,
+  submitLabel,
+  title,
+  description,
+}: Props) {
   const [fields, setFields] = useState<ProjectFormValues>(
-    editing ? fromProject(editing) : blankState()
+    editing ? fromProject(editing) : blankState(initialValues)
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Sync form when editing target changes
   useEffect(() => {
-    setFields(editing ? fromProject(editing) : blankState())
+    setFields(editing ? fromProject(editing) : blankState(initialValues))
     setError(null)
-  }, [editing])
+  }, [editing, initialValues])
 
+  const isPending = fields.status === 'pending'
   const selectedClient = fields.client_id
     ? clients.find(c => c.id === fields.client_id)
     : null
@@ -77,10 +103,30 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
     setFields(prev => ({ ...prev, client_id: id }))
   }
 
+  function handleStatusChange(value: string | null) {
+    if (!value) return
+    const status = value as ProjectStatus
+    setFields(prev => ({
+      ...prev,
+      status,
+      // reset sub_status when switching away from pending
+      sub_status: status === 'pending' ? (prev.sub_status ?? 'prospecting') : null,
+    }))
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const amount = parseFloat(fields.expected_amount)
-    if (!fields.name.trim() || isNaN(amount) || amount <= 0) return
+
+    if (!fields.name.trim()) return
+
+    const rawAmount = fields.expected_amount.trim()
+    const amount = rawAmount ? parseFloat(rawAmount) : null
+
+    // confirmed projects require amount + date
+    if (!isPending) {
+      if (amount === null || isNaN(amount) || amount <= 0) return
+      if (!fields.expected_date) return
+    }
 
     setLoading(true)
     setError(null)
@@ -91,13 +137,14 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
           name: fields.name.trim(),
           client_id: fields.client_id,
           expected_amount: amount,
-          expected_date: fields.expected_date,
-          status: fields.status,
+          expected_date: fields.expected_date || null,
+          status: canEditStatus ? fields.status : (editing?.status ?? 'pending'),
+          sub_status: isPending ? fields.sub_status : null,
         },
         editing?.id ?? null
       )
       if (!editing) {
-        setFields(blankState())
+        setFields(blankState(initialValues))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -107,13 +154,33 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
   }
 
   const isEdit = editing !== null
+  const canEditStatus = !editing || editing.status === 'pending' || editing.status === 'confirmed'
+
+  // Submit enabled when name filled; confirmed also needs amount
+  const submitDisabled = loading
+    || !fields.name.trim()
+    || (!isPending && (!fields.expected_amount || !fields.expected_date))
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="panel-surface-soft rounded-[18px] p-6 space-y-5"
+      className={
+        surface === 'panel'
+          ? 'panel-surface-soft rounded-[18px] p-6 space-y-5'
+          : 'space-y-5'
+      }
     >
-      <p className="section-label">{isEdit ? 'Edit project' : 'New project'}</p>
+      {showHeader ? (
+        <div className="form-card-header">
+          <p className="section-label">{isEdit ? 'Edit project' : 'New project'}</p>
+          <h2 className="form-card-title">
+            {title ?? (isEdit ? 'Refine this project' : 'Add a future payment')}
+          </h2>
+          <p className="form-card-copy">
+            {description ?? 'Track expected work, amount, and timing with the same polished structure used across the app.'}
+          </p>
+        </div>
+      ) : null}
 
       {/* Name */}
       <div className="space-y-2">
@@ -129,9 +196,8 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
         />
       </div>
 
-      {/* Row: client + amount — CSS grid keeps the right column at a fixed 10rem so
-           it stays perfectly aligned with the Status column in the row below */}
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-3">
+      {/* Row: client + status */}
+      <div className={`grid gap-3 ${canEditStatus ? 'grid-cols-1 sm:grid-cols-[1fr_10rem]' : 'grid-cols-1'}`}>
         <div className="space-y-2">
           <Label htmlFor="proj-client" className="form-label">Client (optional)</Label>
           <Select
@@ -155,8 +221,55 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
           </Select>
         </div>
 
+        {canEditStatus ? (
+          <div className="space-y-2">
+            <Label htmlFor="proj-status" className="form-label">Status</Label>
+            <Select
+              value={fields.status}
+              onValueChange={handleStatusChange}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Sub-status row — only when pending */}
+      {isPending ? (
         <div className="space-y-2">
-          <Label htmlFor="proj-amount" className="form-label">Expected amount</Label>
+          <Label htmlFor="proj-sub-status" className="form-label">Stage</Label>
+          <Select
+            value={fields.sub_status ?? 'prospecting'}
+            onValueChange={(v: string | null) =>
+              v && setFields(prev => ({ ...prev, sub_status: v as ProjectSubStatus }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SUB_STATUS_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      {/* Row: amount + date — layout adapts by status */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="proj-amount" className="form-label">
+            {isPending ? 'Estimated value' : 'Expected amount'}
+            {isPending ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+          </Label>
           <div className="relative">
             <span
               className="absolute left-3 top-1/2 -translate-y-1/2 text-sm select-none pointer-events-none"
@@ -170,21 +283,21 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
               min="0"
               step="0.01"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder={isPending ? 'Value TBD' : '0.00'}
               value={fields.expected_amount}
               onChange={e => setFields(prev => ({ ...prev, expected_amount: e.target.value }))}
-              required
+              required={!isPending}
               disabled={loading}
               className={selectedClient?.currency === 'BRL' ? 'pl-11' : 'pl-9'}
             />
           </div>
         </div>
-      </div>
 
-      {/* Row: date + status — right column locked to same 10rem as amount above */}
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-3">
         <div className="space-y-2">
-          <Label htmlFor="proj-date" className="form-label">Expected date</Label>
+          <Label htmlFor="proj-date" className="form-label">
+            Expected date
+            {isPending ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+          </Label>
           <DatePicker
             id="proj-date"
             value={fields.expected_date}
@@ -192,38 +305,21 @@ export function ProjectForm({ clients, editing, onSave, onCancel }: Props) {
             disabled={loading}
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="proj-status" className="form-label">Status</Label>
-          <Select
-            value={fields.status}
-            onValueChange={(v: string | null) => v && setFields(prev => ({ ...prev, status: v as ProjectStatus }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {error && (
         <p className="text-xs" style={{ color: 'var(--red)' }}>{error}</p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="form-cta-row" data-align={isEdit ? 'start' : 'center'}>
         <Button
           type="submit"
-          disabled={loading || !fields.name.trim() || !fields.expected_amount}
-          className="primary-cta-button h-11 px-5 font-medium"
+          disabled={submitDisabled}
+          className="primary-cta-button h-11 min-w-[12rem] px-6 font-medium"
         >
           {loading
             ? isEdit ? 'Saving…' : 'Adding…'
-            : isEdit ? 'Save changes' : 'Add project'}
+            : submitLabel ?? (isEdit ? 'Save changes' : 'Add project')}
         </Button>
 
         {isEdit && (

@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PaymentsPageClient } from '@/components/payments/PaymentsPageClient'
-import type { Client, Payment } from '@/types'
+import type { Client, Payment, Project } from '@/types'
 
 export default async function PaymentsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: payments }, { data: clients }] = await Promise.all([
+  const [{ data: payments }, { data: clients }, { data: projects }] = await Promise.all([
     supabase
       .from('payments')
       .select('*')
@@ -19,6 +19,10 @@ export default async function PaymentsPage() {
       .select('id, name, currency')
       .eq('user_id', user.id)
       .order('name'),
+    supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id),
   ])
 
   return (
@@ -33,6 +37,7 @@ export default async function PaymentsPage() {
         <PaymentsPageClient
           initialPayments={(payments ?? []) as Payment[]}
           clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
+          projects={(projects ?? []) as Project[]}
         />
       </div>
     </div>

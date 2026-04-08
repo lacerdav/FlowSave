@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { ProjectStatus } from '@/types'
+import type { ProjectStatus, ProjectSubStatus } from '@/types'
 
 export async function PATCH(
   request: NextRequest,
@@ -14,9 +14,10 @@ export async function PATCH(
   const body = await request.json() as {
     name?: string
     client_id?: string | null
-    expected_amount?: number
-    expected_date?: string
+    expected_amount?: number | null
+    expected_date?: string | null
     status?: ProjectStatus
+    sub_status?: ProjectSubStatus | null
   }
 
   const { data, error } = await supabase
