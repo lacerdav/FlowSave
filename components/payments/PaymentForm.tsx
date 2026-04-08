@@ -3,27 +3,35 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { CreateProjectFromPaymentModal } from '@/components/projects/CreateProjectFromPaymentModal'
-import type { Client, EditableProjectStatus, Payment, Project } from '@/types'
+import type {
+  Client,
+  EditableProjectStatus,
+  PaymentCreateResponse,
+  Project,
+  ScheduleEntryWithContext,
+} from '@/types'
 
 interface Props {
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
   projects: Project[]
-  onAdd: (payment: Payment) => void
+  scheduleEntries?: ScheduleEntryWithContext[]
+  onAdd: (result: PaymentCreateResponse) => void
   onProjectAdd: (project: Project) => void
 }
 
 const CREATE_PROJECT_OPTION = '__create_project__'
 
-export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
+export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, onProjectAdd }: Props) {
   const [clientId, setClientId] = useState<string>('none')
   const [projectId, setProjectId] = useState<string>('none')
-  const [amount, setAmount] = useState('')
+  const [scheduleEntryId, setScheduleEntryId] = useState<string>('none')
+  const [amount, setAmount] = useState<number | null>(null)
   const [currency, setCurrency] = useState('USD')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
@@ -31,12 +39,36 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
 
+  const pendingScheduleEntries = scheduleEntries.filter(e => e.status === 'scheduled')
+
   const activeProjects = projects.filter(
     project => project.status === 'pending' || project.status === 'confirmed'
   )
+  const selectedScheduleEntry = scheduleEntryId !== 'none'
+    ? pendingScheduleEntries.find(entry => entry.id === scheduleEntryId) ?? null
+    : null
   const selectedProject = projectId !== 'none'
     ? activeProjects.find(project => project.id === projectId) ?? null
     : null
+  const isScheduleLocked = selectedScheduleEntry != null
+
+  function handleScheduleEntryChange(value: string | null) {
+    if (!value) return
+    setScheduleEntryId(value)
+    if (value === 'none') {
+      setProjectId('none')
+      return
+    }
+
+    const entry = pendingScheduleEntries.find(e => e.id === value)
+    if (!entry) return
+
+    setAmount(entry.amount)
+    setDate(entry.expected_date)
+    setCurrency(entry.currency)
+    setClientId(entry.client_id ?? 'none')
+    setProjectId(entry.project_id)
+  }
 
   function handleClientChange(id: string | null) {
     if (!id) return
@@ -48,6 +80,7 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
   }
 
   function applyProjectDefaults(project: Project) {
+    setScheduleEntryId('none')
     setProjectId(project.id)
 
     if (project.client_id) {
@@ -60,8 +93,8 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
       setClientId('none')
     }
 
-    if (!amount && project.expected_amount != null) {
-      setAmount(String(project.expected_amount))
+    if (amount == null && project.expected_amount != null) {
+      setAmount(project.expected_amount)
     }
   }
 
@@ -74,6 +107,7 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
     }
 
     if (value === 'none') {
+      setScheduleEntryId('none')
       setProjectId('none')
       return
     }
@@ -111,6 +145,10 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (amount == null || amount <= 0) {
+      setError('Enter a valid amount.')
+      return
+    }
     setLoading(true)
     setError(null)
 
@@ -119,11 +157,12 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: clientId === 'none' ? null : clientId,
-        amount: parseFloat(amount),
+        amount,
         currency,
         received_at: date,
         notes: notes || null,
         project_id: projectId === 'none' ? null : projectId,
+        schedule_entry_id: scheduleEntryId === 'none' ? null : scheduleEntryId,
       }),
     })
 
@@ -135,11 +174,12 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
       return
     }
 
-    onAdd(json as Payment)
-    setAmount('')
+    onAdd(json as PaymentCreateResponse)
+    setAmount(null)
     setNotes('')
     setClientId('none')
     setProjectId('none')
+    setScheduleEntryId('none')
     setDate(new Date().toISOString().split('T')[0])
     setLoading(false)
   }
@@ -160,24 +200,16 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
       <div className="payment-form-grid">
         <div className="payment-field">
           <Label htmlFor="payment-amount" className="form-label">Amount</Label>
-          <div className="payment-control-wrap">
-            <span className="payment-currency-symbol">
-              {currency === 'BRL' ? 'R$' : '$'}
-            </span>
-            <Input
-              id="payment-amount"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              disabled={loading}
-              className={`payment-control payment-amount-input ${currency === 'BRL' ? 'pl-11' : 'pl-9'}`}
-            />
-          </div>
+          <MoneyInput
+            id="payment-amount"
+            currency={currency}
+            value={amount}
+            onValueChange={setAmount}
+            required
+            disabled={loading}
+            wrapperClassName="payment-control-wrap"
+            className="payment-control payment-amount-input"
+          />
         </div>
 
         <div className="payment-field">
@@ -188,13 +220,14 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
             onChange={setDate}
             disabled={loading}
             className="payment-date-picker"
+            triggerClassName="payment-control"
           />
         </div>
 
         <div className="payment-field">
           <Label htmlFor="payment-client" className="form-label">Client (optional)</Label>
           <Select value={clientId} onValueChange={handleClientChange}>
-            <SelectTrigger className="payment-control payment-select-trigger">
+            <SelectTrigger className="payment-control payment-select-trigger" disabled={loading || isScheduleLocked}>
               <SelectValue placeholder="Select client">
                 {(id: string | null) => {
                   if (!id || id === 'none') return 'No client'
@@ -214,7 +247,7 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
         <div className="payment-field">
           <Label htmlFor="payment-project" className="form-label">Project (optional)</Label>
           <Select value={projectId} onValueChange={handleProjectChange}>
-            <SelectTrigger className="payment-control payment-select-trigger">
+            <SelectTrigger className="payment-control payment-select-trigger" disabled={loading || isScheduleLocked}>
               <SelectValue placeholder="Link a project">
                 {(id: string | null) => {
                   if (!id || id === 'none') return 'No project linked'
@@ -236,7 +269,7 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
         <div className="payment-field">
           <Label htmlFor="payment-currency" className="form-label">Currency</Label>
           <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-            <SelectTrigger className="payment-control payment-select-trigger">
+            <SelectTrigger className="payment-control payment-select-trigger" disabled={loading || isScheduleLocked}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="payment-select-content">
@@ -247,6 +280,34 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
         </div>
       </div>
 
+      {pendingScheduleEntries.length > 0 && (
+        <div className="payment-field">
+          <Label htmlFor="payment-schedule-entry" className="form-label">
+            Link to scheduled payment (optional)
+          </Label>
+          <Select value={scheduleEntryId} onValueChange={handleScheduleEntryChange}>
+            <SelectTrigger className="payment-control payment-select-trigger">
+              <SelectValue placeholder="Select a scheduled entry">
+                {(id: string | null) => {
+                  if (!id || id === 'none') return 'No scheduled entry linked'
+                  const entry = pendingScheduleEntries.find(e => e.id === id)
+                  if (!entry) return 'Scheduled entry'
+                  return `${entry.project_name} · ${entry.label ?? 'Payment'} · ${formatDate(entry.expected_date)} · ${formatCurrency(entry.amount, entry.currency)}`
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="payment-select-content">
+              <SelectItem value="none">No scheduled entry linked</SelectItem>
+              {pendingScheduleEntries.map(entry => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.project_name} · {entry.label ?? 'Payment'} · {formatDate(entry.expected_date)} · {formatCurrency(entry.amount, entry.currency)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {selectedProject ? (
         <div className="linked-project-banner">
           <div className="space-y-1">
@@ -256,11 +317,19 @@ export function PaymentForm({ clients, projects, onAdd, onProjectAdd }: Props) {
                 ? `Linked to ${clients.find(client => client.id === selectedProject.client_id)?.name ?? 'a client'}`
                 : 'No client attached'}
               {' · '}
-              {selectedProject.status === 'confirmed' ? 'Confirmed project' : 'Pending project'}
+              {selectedScheduleEntry
+                ? `Scheduled ${selectedScheduleEntry.label ?? 'payment'}`
+                : selectedProject.status === 'confirmed'
+                ? 'Confirmed project'
+                : 'Pending project'}
             </p>
           </div>
           <span className="status-chip">
-            {selectedProject.expected_date ? formatDate(selectedProject.expected_date) : 'To be defined'}
+            {selectedScheduleEntry
+              ? formatDate(selectedScheduleEntry.expected_date)
+              : selectedProject.expected_date
+              ? formatDate(selectedProject.expected_date)
+              : 'To be defined'}
           </span>
         </div>
       ) : null}

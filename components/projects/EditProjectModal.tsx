@@ -45,7 +45,7 @@ export function EditProjectModal({ clients, project, open, onClose, onSave }: Pr
             Edit project
           </DialogTitle>
           <p className="dialog-subtitle">
-            Refine the expected amount, timing, or status without leaving the project list.
+            Refine the project details, value, or timing without leaving the project list.
           </p>
         </DialogHeader>
 
@@ -56,6 +56,7 @@ export function EditProjectModal({ clients, project, open, onClose, onSave }: Pr
           onCancel={onClose}
           surface="none"
           showHeader={false}
+          allowStateEditing={false}
         />
       </DialogContent>
     </Dialog>

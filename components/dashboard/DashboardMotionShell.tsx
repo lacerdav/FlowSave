@@ -45,7 +45,7 @@ export function DashboardMotionShell({
       }
 
   return (
-    <div className="space-y-10 pb-20">
+    <div className="space-y-6 pb-12">
       <div className="dashboard-hero">
         <m.p
           className="page-subtitle page-kicker"

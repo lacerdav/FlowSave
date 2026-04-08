@@ -9,8 +9,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Client, Payment } from '@/types'
@@ -34,7 +34,7 @@ interface Props {
 
 export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Props) {
   const [clientId, setClientId] = useState('none')
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState<number | null>(null)
   const [currency, setCurrency] = useState('USD')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
@@ -44,7 +44,7 @@ export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Pr
   useEffect(() => {
     if (!payment) return
     setClientId(payment.client_id ?? 'none')
-    setAmount(String(payment.amount))
+    setAmount(payment.amount)
     setCurrency(payment.currency)
     setDate(payment.received_at)
     setNotes(payment.notes ?? '')
@@ -65,6 +65,10 @@ export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Pr
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (!payment) return
+    if (amount == null || amount <= 0) {
+      setError('Enter a valid amount.')
+      return
+    }
     setLoading(true)
     setError(null)
 
@@ -72,7 +76,7 @@ export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Pr
       await onSave(
         {
           client_id: clientId === 'none' ? null : clientId,
-          amount: parseFloat(amount),
+          amount,
           currency,
           received_at: date,
           notes: notes.trim() || null,
@@ -108,23 +112,16 @@ export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Pr
           <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
             <div className="space-y-2">
               <Label htmlFor="edit-payment-amount" className="form-label">Amount</Label>
-              <div className="payment-control-wrap">
-                <span className="payment-currency-symbol">
-                  {currency === 'BRL' ? 'R$' : '$'}
-                </span>
-                <Input
-                  id="edit-payment-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={event => setAmount(event.target.value)}
-                  disabled={loading}
-                  required
-                  className={`payment-control ${currency === 'BRL' ? 'pl-11' : 'pl-9'}`}
-                />
-              </div>
+              <MoneyInput
+                id="edit-payment-amount"
+                currency={currency}
+                value={amount}
+                onValueChange={setAmount}
+                disabled={loading}
+                required
+                wrapperClassName="payment-control-wrap"
+                className="payment-control"
+              />
             </div>
 
             <div className="space-y-2">
@@ -135,6 +132,7 @@ export function EditPaymentModal({ payment, clients, open, onClose, onSave }: Pr
                 onChange={setDate}
                 disabled={loading}
                 className="payment-date-picker"
+                triggerClassName="payment-control"
               />
             </div>
           </div>

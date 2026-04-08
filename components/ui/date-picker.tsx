@@ -18,6 +18,7 @@ interface DatePickerProps {
   onChange: (value: string) => void
   disabled?: boolean
   className?: string
+  triggerClassName?: string
 }
 
 function parseDate(value: string): Date | null {
@@ -73,6 +74,7 @@ export function DatePicker({
   onChange,
   disabled,
   className,
+  triggerClassName,
 }: DatePickerProps) {
   const rootRef  = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
@@ -165,7 +167,7 @@ export function DatePicker({
       <div className="date-picker-header">
         <button
           type="button"
-          className="date-picker-nav"
+          className="date-picker-nav interactive"
           onClick={() => moveMonth(-1)}
           aria-label="Previous month"
         >
@@ -179,7 +181,7 @@ export function DatePicker({
         </p>
         <button
           type="button"
-          className="date-picker-nav"
+          className="date-picker-nav interactive"
           onClick={() => moveMonth(1)}
           aria-label="Next month"
         >
@@ -205,7 +207,7 @@ export function DatePicker({
             <button
               key={date.toISOString()}
               type="button"
-              className="date-picker-day"
+              className="date-picker-day interactive"
               data-outside={isOutsideMonth ? 'true' : 'false'}
               data-selected={isDaySelected ? 'true' : 'false'}
               data-today={isToday ? 'true' : 'false'}
@@ -224,7 +226,7 @@ export function DatePicker({
       <button
         id={id}
         type="button"
-        className="date-picker-trigger"
+        className={cn('date-picker-trigger interactive', triggerClassName)}
         data-open={open ? 'true' : 'false'}
         onClick={() => setOpen((current) => !current)}
         disabled={disabled}

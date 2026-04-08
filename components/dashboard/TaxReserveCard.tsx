@@ -25,17 +25,16 @@ export function TaxReserveCard({ items, taxPct }: TaxReserveCardProps) {
 
   return (
     <div
-      className="panel-surface card-interactive rounded-xl p-6"
+      className="panel-surface card-interactive rounded-xl p-4"
       style={{
         border: '1px solid var(--border)',
       }}
     >
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <p className="card-label">Tax Reserve</p>
-          <p className="card-subtitle" style={{ marginTop: 4 }}>
-            Set aside {taxPct}% per payment
-          </p>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="metric-card__label">Tax Reserve</p>
+          <h2 className="dashboard-card-title">Protected for taxes</h2>
+          <p className="dashboard-card-copy">Set aside {taxPct}% from each payment.</p>
         </div>
         <span
           style={{
@@ -63,7 +62,7 @@ export function TaxReserveCard({ items, taxPct }: TaxReserveCardProps) {
             {items.map((item, i) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between py-2.5"
+                className="flex items-center justify-between py-2"
                 style={{
                   borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
@@ -84,7 +83,7 @@ export function TaxReserveCard({ items, taxPct }: TaxReserveCardProps) {
           </div>
 
           <div
-            className="flex items-center justify-between pt-4 mt-2"
+            className="mt-1 flex items-center justify-between pt-3"
             style={{ borderTop: '1px solid var(--border-strong)' }}
           >
             <span style={{ fontSize: 12, color: 'var(--text3)' }}>

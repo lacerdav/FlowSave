@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoneyInput } from '@/components/ui/money-input'
 
 interface Props {
   defaultValues: {
@@ -14,9 +15,9 @@ interface Props {
 }
 
 export function SettingsForm({ defaultValues }: Props) {
-  const [salary, setSalary] = useState(String(defaultValues.target_monthly_salary || ''))
+  const [salary, setSalary] = useState<number | null>(defaultValues.target_monthly_salary || null)
   const [taxPct, setTaxPct] = useState(String(defaultValues.tax_reserve_pct || '25'))
-  const [budget, setBudget] = useState(String(defaultValues.survival_budget || ''))
+  const [budget, setBudget] = useState<number | null>(defaultValues.survival_budget || null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,9 +32,9 @@ export function SettingsForm({ defaultValues }: Props) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        target_monthly_salary: parseFloat(salary) || 0,
+        target_monthly_salary: salary ?? 0,
         tax_reserve_pct: parseFloat(taxPct) || 25,
-        survival_budget: parseFloat(budget) || 0,
+        survival_budget: budget ?? 0,
       }),
     })
 
@@ -57,14 +58,12 @@ export function SettingsForm({ defaultValues }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="salary" className="form-label">Monthly target ($)</Label>
-        <Input
+        <MoneyInput
           id="salary"
-          type="number"
-          min="0"
-          step="100"
           placeholder="5000"
           value={salary}
-          onChange={(e) => { setSalary(e.target.value); setSuccess(false) }}
+          onValueChange={value => { setSalary(value); setSuccess(false) }}
+          currency="USD"
         />
         <p className="small-label">Your target monthly take-home pay</p>
       </div>
@@ -86,14 +85,12 @@ export function SettingsForm({ defaultValues }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="budget" className="form-label">Survival budget ($)</Label>
-        <Input
+        <MoneyInput
           id="budget"
-          type="number"
-          min="0"
-          step="100"
           placeholder="2000"
           value={budget}
-          onChange={(e) => { setBudget(e.target.value); setSuccess(false) }}
+          onValueChange={value => { setBudget(value); setSuccess(false) }}
+          currency="USD"
         />
         <p className="small-label">Minimum monthly income to cover essential expenses</p>
       </div>

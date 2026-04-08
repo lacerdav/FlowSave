@@ -14,7 +14,7 @@ interface Props {
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
   initialValues: {
     client_id: string | null
-    expected_amount: string
+    expected_amount: number | null
     expected_date: string
     status: EditableProjectStatus
   }

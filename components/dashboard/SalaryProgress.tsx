@@ -35,12 +35,16 @@ export function SalaryProgress({ received, target, currency = 'USD' }: SalaryPro
 
   return (
     <div
-      className="panel-surface card-interactive rounded-xl p-6 flex flex-col gap-4"
+      className="panel-surface card-interactive rounded-xl p-4 flex flex-col gap-3"
       style={{
         border: '1px solid var(--border)',
       }}
     >
-      <p className="card-label">Salary Target</p>
+      <div className="space-y-1">
+        <p className="metric-card__label">Salary Target</p>
+        <h2 className="dashboard-card-title">Monthly salary coverage</h2>
+        <p className="dashboard-card-copy">Received versus target.</p>
+      </div>
 
       <div className="flex items-end justify-between">
         <span className="metric-value" style={{ color: 'var(--text)', lineHeight: 1 }}>

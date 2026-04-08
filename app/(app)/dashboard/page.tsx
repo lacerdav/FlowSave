@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { computeForecast } from '@/lib/forecast'
 import { formatCurrency } from '@/lib/utils'
-import { MetricCard } from '@/components/dashboard/MetricCard'
-import { CashFlowChart, type ChartBar } from '@/components/dashboard/CashFlowChart'
+import { HeroMonthCard } from '@/components/dashboard/HeroMonthCard'
+import { SalaryGapCard } from '@/components/dashboard/SalaryGapCard'
+import { PendingCard } from '@/components/dashboard/PendingCard'
+import { CashFlowChart, type ChartPoint } from '@/components/dashboard/CashFlowChart'
 import { DashboardMotionShell } from '@/components/dashboard/DashboardMotionShell'
 import { RecentPayments, type PaymentItem } from '@/components/dashboard/RecentPayments'
-import { TaxReserveCard, type TaxReserveItem } from '@/components/dashboard/TaxReserveCard'
 import { SalaryProgress } from '@/components/dashboard/SalaryProgress'
-import type { Client, Payment, Project, Settings } from '@/types'
+import type { Client, Payment, Project, ScheduleEntry, Settings } from '@/types'
 
 const CLIENT_COLORS = [
   '#5b7fff', '#22d87a', '#f5a623', '#ff5b7f',
@@ -46,6 +46,7 @@ export default async function DashboardPage() {
     { data: clientRows },
     { data: paymentRows },
     { data: projectRows },
+    { data: scheduleRows },
     { count: clientCount },
     { count: paymentCount },
   ] = await Promise.all([
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
     supabase.from('clients').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
     supabase.from('payments').select('*').eq('user_id', user.id).order('received_at', { ascending: false }),
     supabase.from('projects').select('*').eq('user_id', user.id),
+    supabase.from('payment_schedule').select('*').eq('user_id', user.id).eq('status', 'scheduled').order('expected_date', { ascending: true }),
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('payments').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
@@ -72,6 +74,7 @@ export default async function DashboardPage() {
   const clients: Client[] = clientRows ?? []
   const payments: Payment[] = paymentRows ?? []
   const projects: Project[] = projectRows ?? []
+  const scheduleEntries: ScheduleEntry[] = scheduleRows ?? []
 
   // ── Date helpers ────────────────────────────────────────────────────────────
   const today = new Date()
@@ -114,16 +117,42 @@ export default async function DashboardPage() {
   // ── Salary gap (primary currency — target has no currency field) ─────────────
   const salaryGap = settings.target_monthly_salary - totalThisMonth
 
-  // ── Pending projects ─────────────────────────────────────────────────────────
-  const pendingProjects = projects.filter(
-    p => p.status === 'pending' || p.status === 'confirmed'
+  // ── Pending: scheduled entries + unscheduled project fallback ───────────────
+  const scheduledByCurrency = scheduleEntries.reduce((map, e) => {
+    map.set(e.currency, (map.get(e.currency) ?? 0) + e.amount)
+    return map
+  }, new Map<string, number>())
+
+  const projectIdsWithSchedule = new Set(scheduleEntries.map(e => e.project_id))
+  const unscheduledProjects = projects.filter(
+    p => (p.status === 'pending' || p.status === 'confirmed') &&
+      !projectIdsWithSchedule.has(p.id)
   )
-  const pendingCount = pendingProjects.length
-  const pendingByCurrency = pendingProjects.reduce((map, p) => {
+  const unscheduledByCurrency = unscheduledProjects.reduce((map, p) => {
     const cur = p.client_id ? (clientMap.get(p.client_id)?.currency ?? 'USD') : 'USD'
     map.set(cur, (map.get(cur) ?? 0) + (p.expected_amount ?? 0))
     return map
   }, new Map<string, number>())
+
+  // Merge both currency maps
+  const pendingByCurrency = new Map(scheduledByCurrency)
+  for (const [cur, total] of unscheduledByCurrency) {
+    pendingByCurrency.set(cur, (pendingByCurrency.get(cur) ?? 0) + total)
+  }
+
+  const pendingCount = scheduleEntries.length + unscheduledProjects.length
+
+  // Pending subtitle
+  const scheduledCount = scheduleEntries.length
+  const unscheduledCount = unscheduledProjects.length
+  const pendingSubtitle =
+    scheduledCount > 0 && unscheduledCount > 0
+      ? `${scheduledCount} scheduled · ${unscheduledCount} unscheduled`
+      : scheduledCount > 0
+      ? `${scheduledCount} scheduled ${scheduledCount === 1 ? 'entry' : 'entries'}`
+      : unscheduledCount > 0
+      ? `${unscheduledCount} ${unscheduledCount === 1 ? 'project' : 'projects'}`
+      : undefined
 
   // ── Last month delta ─────────────────────────────────────────────────────────
   const lmStart = new Date(cy, cm - 1, 1).toISOString().split('T')[0]
@@ -137,10 +166,7 @@ export default async function DashboardPage() {
       ? Math.round(((totalThisMonth - lastMonthTotal) / lastMonthTotal) * 100)
       : null
 
-  // ── Forecast (for chart) ─────────────────────────────────────────────────────
-  const forecast = computeForecast(payments, projects, settings, today)
-
-  // ── Chart bars ───────────────────────────────────────────────────────────────
+  // ── Chart data: keep received, scheduled, and gap separate ──────────────────
   const pmtByMonth = new Map<string, number>()
   for (const p of payments) {
     const d = new Date(p.received_at + 'T00:00:00')
@@ -148,40 +174,43 @@ export default async function DashboardPage() {
     pmtByMonth.set(k, (pmtByMonth.get(k) ?? 0) + p.amount)
   }
 
-  const chartBars: ChartBar[] = []
-  const historicalAmounts: number[] = []
+  const scheduledMonthMap = new Map<string, number>()
+  for (const entry of scheduleEntries) {
+    const d = new Date(entry.expected_date + 'T00:00:00')
+    const k = dateKey(d)
+    scheduledMonthMap.set(k, (scheduledMonthMap.get(k) ?? 0) + entry.amount)
+  }
 
+  const chartPoints: ChartPoint[] = []
   for (let i = 3; i >= 1; i--) {
-    const d = new Date(cy, cm - i, 1)
-    const amt = pmtByMonth.get(dateKey(d)) ?? 0
-    if (amt > 0) {
-      historicalAmounts.push(amt)
-      chartBars.push({ label: monthLabel(d), amount: amt, type: 'historical' })
-    }
+    const month = new Date(cy, cm - i, 1)
+    const key = dateKey(month)
+    const received = Math.round((pmtByMonth.get(key) ?? 0) * 100) / 100
+    const scheduled = Math.round((scheduledMonthMap.get(key) ?? 0) * 100) / 100
+    const gap = Math.max(settings.target_monthly_salary - received - scheduled, 0)
+
+    chartPoints.push({
+      label: monthLabel(month),
+      received,
+      scheduled,
+      gap: Math.round(gap * 100) / 100,
+    })
   }
 
-  chartBars.push({
-    label: monthLabel(today),
-    amount: pmtByMonth.get(dateKey(today)) ?? 0,
-    type: 'current',
-  })
+  for (let i = 0; i < 3; i++) {
+    const month = new Date(cy, cm + i, 1)
+    const key = dateKey(month)
+    const received = Math.round((pmtByMonth.get(key) ?? 0) * 100) / 100
+    const scheduled = Math.round((scheduledMonthMap.get(key) ?? 0) * 100) / 100
+    const gap = Math.max(settings.target_monthly_salary - received - scheduled, 0)
 
-  for (let i = 0; i < 2; i++) {
-    const f = forecast[i]
-    if (f) {
-      chartBars.push({
-        label: monthLabel(f.month),
-        amount: Math.round(f.projected),
-        type: f.isLean ? 'forecast-lean' : 'forecast-healthy',
-      })
-    }
+    chartPoints.push({
+      label: monthLabel(month),
+      received,
+      scheduled,
+      gap: Math.round(gap * 100) / 100,
+    })
   }
-
-  const nonZero = historicalAmounts.filter(v => v > 0)
-  const averageLine =
-    nonZero.length > 0
-      ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length)
-      : 0
 
   // ── Recent payments (last 10) ────────────────────────────────────────────────
   const recentPayments: PaymentItem[] = payments.slice(0, 10).map(p => {
@@ -197,18 +226,6 @@ export default async function DashboardPage() {
     }
   })
 
-  // ── Tax reserve breakdown ────────────────────────────────────────────────────
-  const taxItems: TaxReserveItem[] = currentMonthPmts.map(p => {
-    const client = p.client_id ? clientMap.get(p.client_id) : undefined
-    return {
-      id: p.id,
-      clientName: client?.name ?? 'Unknown client',
-      amountReceived: p.amount,
-      reserveAmount: Math.round(p.amount * (settings.tax_reserve_pct / 100) * 100) / 100,
-      currency: p.currency,
-    }
-  })
-
   // ── Empty state banner ───────────────────────────────────────────────────────
   const showEmptyBanner =
     settings.onboarding_completed &&
@@ -217,9 +234,9 @@ export default async function DashboardPage() {
   // ── Metric labels ────────────────────────────────────────────────────────────
   const monthTotalLabel = multiCurrencyLabel(monthByCurrency, primaryCurrency)
   const taxTotalLabel   = multiCurrencyLabel(taxByCurrency, primaryCurrency)
-  const pendingLabel    = pendingCount > 0
-    ? multiCurrencyLabel(pendingByCurrency, primaryCurrency)
-    : ''
+  const pendingUsdAmount = Math.round((pendingByCurrency.get('USD') ?? 0) * 100) / 100
+  const pendingBrlAmount = Math.round((pendingByCurrency.get('BRL') ?? 0) * 100) / 100
+  const monthPaymentCount = currentMonthPmts.length
 
   return (
     <DashboardMotionShell
@@ -265,80 +282,52 @@ export default async function DashboardPage() {
         ) : undefined
       }
       metricsRow={
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <MetricCard
-            label="This Month"
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <HeroMonthCard
             value={monthTotalLabel}
-            subtitle={
+            badge={
               monthDeltaPct !== null
                 ? `${monthDeltaPct >= 0 ? '+' : ''}${monthDeltaPct}% vs last month`
-                : undefined
+                : 'vs last month'
             }
-            subtitleColor={
-              monthDeltaPct !== null && monthDeltaPct >= 0
-                ? 'var(--green)'
-                : monthDeltaPct !== null
-                ? 'var(--red)'
-                : undefined
+            badgeTone={
+              monthDeltaPct === null
+                ? 'neutral'
+                : monthDeltaPct >= 0
+                ? 'positive'
+                : 'negative'
             }
-          />
-          <MetricCard
-            label="Tax Reserve"
-            value={taxTotalLabel}
-            valueColor="var(--amber)"
-            subtitle={`${settings.tax_reserve_pct}% of received`}
-          />
-          <MetricCard
-            label="Salary Gap"
-            value={
-              salaryGap <= 0
-                ? `+${formatCurrency(Math.abs(salaryGap), primaryCurrency)}`
-                : formatCurrency(salaryGap, primaryCurrency)
-            }
-            valueColor={salaryGap <= 0 ? 'var(--green)' : 'var(--red)'}
             subtitle={
-              salaryGap <= 0
-                ? 'Surplus this month'
-                : `${formatCurrency(settings.target_monthly_salary, primaryCurrency)} target`
+              monthPaymentCount > 0
+                ? `${monthPaymentCount} payment${monthPaymentCount === 1 ? '' : 's'} received`
+                : 'No payments received yet'
             }
-          />
-          <MetricCard
-            label="Pending"
-            value={pendingLabel}
-            valueColor="var(--accent2)"
-            subtitle={
-              pendingCount > 0
-                ? `${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}`
-                : undefined
-            }
-            isEmpty={pendingCount === 0}
-            emptyMessage="No upcoming payments"
-            emptyAction={
-              <Link href="/projects" style={{ color: 'var(--accent2)' }}>
-                Add a project →
-              </Link>
-            }
-          />
-        </div>
-      }
-      middleRow={
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
-          <CashFlowChart bars={chartBars} averageLine={averageLine} />
-          <RecentPayments payments={recentPayments} />
-        </div>
-      }
-      lowerRow={
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <TaxReserveCard
-            items={taxItems}
+            taxLabel={taxTotalLabel}
             taxPct={settings.tax_reserve_pct}
           />
-          <SalaryProgress
-            received={totalThisMonth}
+          <SalaryGapCard
+            gap={salaryGap}
             target={settings.target_monthly_salary}
             currency={primaryCurrency}
           />
+          <PendingCard
+            usdAmount={pendingUsdAmount}
+            brlAmount={pendingBrlAmount}
+            pendingCount={pendingCount}
+            subtitle={pendingSubtitle}
+          />
+          <RecentPayments payments={recentPayments} />
         </div>
+      }
+      middleRow={
+        <CashFlowChart points={chartPoints} currency={primaryCurrency} />
+      }
+      lowerRow={
+        <SalaryProgress
+          received={totalThisMonth}
+          target={settings.target_monthly_salary}
+          currency={primaryCurrency}
+        />
       }
     />
   )

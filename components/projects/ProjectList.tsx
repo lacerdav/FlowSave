@@ -6,15 +6,19 @@ import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'framer-motion
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MarkReceivedModal } from './MarkReceivedModal'
 import { ActionMenu } from '@/components/ui/action-menu'
-import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus } from '@/types'
+import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus, ScheduleEntry } from '@/types'
 
 interface Props {
   projects: Project[]
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
+  scheduleEntries: ScheduleEntry[]
   onEdit: (project: Project) => void
+  onMoveToNegotiating: (project: Project) => void
+  onMoveToConfirmed: (project: Project) => void
   onCancelProject: (project: Project) => void
   onDelete: (id: string) => void
   onMarkReceived: (payment: Payment, updatedProject: Project) => void
+  onManageSchedule: (project: Project) => void
   deletingId: string | null
   highlightedProjectId: string | null
 }
@@ -25,6 +29,7 @@ interface StatusConfig {
   dim: string
   dotColor: string
   border: string
+  chipClassName?: string
   badgeGlow?: string
   dotGlow?: string
 }
@@ -107,11 +112,59 @@ const SUB_STATUS_LABEL: Record<ProjectSubStatus, string> = {
   negotiating: 'Negotiating',
 }
 
+const PENDING_STAGE_CONFIG: Record<ProjectSubStatus, StatusConfig> = {
+  prospecting: {
+    label: 'Prospecting',
+    color: 'rgba(230, 222, 255, 0.90)',
+    dim: 'rgba(139, 92, 246, 0.12)',
+    dotColor: 'rgba(167, 139, 250, 0.92)',
+    border: 'rgba(167, 139, 250, 0.24)',
+    chipClassName: 'status-chip--prospecting',
+    badgeGlow: '0 0 10px rgba(139, 92, 246, 0.14), 0 0 4px rgba(139, 92, 246, 0.08)',
+    dotGlow: '0 0 6px rgba(139, 92, 246, 0.34), 0 0 14px rgba(139, 92, 246, 0.14)',
+  },
+  negotiating: {
+    label: 'Negotiating',
+    color: 'rgba(255, 226, 173, 0.96)',
+    dim: 'rgba(255, 184, 77, 0.14)',
+    dotColor: 'rgba(255, 184, 77, 1)',
+    border: 'rgba(255, 184, 77, 0.28)',
+    chipClassName: 'status-chip--negotiating',
+    badgeGlow: '0 0 12px rgba(245, 166, 35, 0.20), 0 0 5px rgba(255, 184, 77, 0.12)',
+    dotGlow: '0 0 7px rgba(255, 184, 77, 0.46), 0 0 16px rgba(245, 166, 35, 0.18)',
+  },
+}
+
 function getStatusLabel(project: Project): string {
   if (project.status === 'pending' && project.sub_status) {
     return SUB_STATUS_LABEL[project.sub_status]
   }
   return STATUS_CONFIG[project.status].label
+}
+
+function getStatusConfig(project: Project): StatusConfig {
+  if (project.status === 'pending') {
+    return PENDING_STAGE_CONFIG[project.sub_status ?? 'prospecting']
+  }
+
+  return STATUS_CONFIG[project.status]
+}
+
+function getPendingAmbientShadow(project: Project): string | undefined {
+  if (project.status !== 'pending') return undefined
+
+  const base = '0 0 20px rgba(245, 166, 35, 0.05)'
+
+  if (project.sub_status === 'negotiating') {
+    return `${base}, 0 0 42px rgba(245, 166, 35, 0.08)`
+  }
+
+  return `${base}, 0 0 38px rgba(139, 92, 246, 0.09)`
+}
+
+function mergeShadows(interactiveShadow: string | undefined, ambientShadow: string | undefined): string | undefined {
+  if (interactiveShadow && ambientShadow) return `${interactiveShadow}, ${ambientShadow}`
+  return interactiveShadow ?? ambientShadow
 }
 
 function amountColor(status: ProjectStatus): string {
@@ -120,17 +173,17 @@ function amountColor(status: ProjectStatus): string {
   return 'var(--accent2)'
 }
 
-function canReceive(status: ProjectStatus) {
-  return status === 'pending' || status === 'confirmed'
-}
-
 export function ProjectList({
   projects,
   clients,
+  scheduleEntries,
   onEdit,
+  onMoveToNegotiating,
+  onMoveToConfirmed,
   onCancelProject,
   onDelete,
   onMarkReceived,
+  onManageSchedule,
   deletingId,
   highlightedProjectId,
 }: Props) {
@@ -138,6 +191,14 @@ export function ProjectList({
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [receivingProject, setReceivingProject] = useState<Project | null>(null)
   const clientMap = new Map(clients.map(c => [c.id, c]))
+
+  // Map project_id → scheduled entry count
+  const scheduledCountByProject = scheduleEntries.reduce((map, e) => {
+    if (e.status === 'scheduled') {
+      map.set(e.project_id, (map.get(e.project_id) ?? 0) + 1)
+    }
+    return map
+  }, new Map<string, number>())
 
   if (projects.length === 0) {
     return (
@@ -207,11 +268,67 @@ export function ProjectList({
                     <AnimatePresence initial={false}>
                       {group.items.map((project, index) => {
                         const client = project.client_id ? clientMap.get(project.client_id) : undefined
-                        const status = STATUS_CONFIG[project.status]
+                        const status = getStatusConfig(project)
                         const isHovered = hoveredId === project.id
                         const isDeleting = deletingId === project.id
                         const isHighlighted = highlightedProjectId === project.id
                         const displayLabel = getStatusLabel(project)
+                        const hasSchedule = scheduledCountByProject.has(project.id)
+                        const ambientShadow = getPendingAmbientShadow(project)
+                        const interactiveShadow = isHighlighted
+                          ? 'inset 3px 0 0 rgba(124, 150, 255, 0.54), inset 0 0 0 1px rgba(154, 177, 255, 0.16), 0 0 32px rgba(73, 106, 207, 0.14)'
+                          : isHovered
+                            ? '0 16px 34px rgba(5, 10, 24, 0.26), 0 0 28px rgba(68, 97, 192, 0.10)'
+                            : undefined
+                        const isPendingProspecting = project.status === 'pending'
+                          && (project.sub_status ?? 'prospecting') === 'prospecting'
+                        const isPendingNegotiating = project.status === 'pending'
+                          && (project.sub_status ?? 'prospecting') === 'negotiating'
+                        const actionItems =
+                          project.status === 'pending'
+                            ? [
+                                ...(isPendingProspecting
+                                  ? [{ label: 'Move to Negotiating', onSelect: () => onMoveToNegotiating(project) }]
+                                  : []),
+                                ...(isPendingNegotiating
+                                  ? [{
+                                      label: 'Move to Confirmed',
+                                      onSelect: () => onMoveToConfirmed(project),
+                                      tone: 'accent' as const,
+                                    }]
+                                  : []),
+                                ...(isPendingNegotiating
+                                  ? [{ label: 'Edit', onSelect: () => onEdit(project) }]
+                                  : []),
+                                { label: 'Cancel', onSelect: () => onCancelProject(project), tone: 'warning' as const },
+                                {
+                                  label: isDeleting ? 'Deleting…' : 'Delete',
+                                  onSelect: () => onDelete(project.id),
+                                  tone: 'danger' as const,
+                                  disabled: isDeleting,
+                                },
+                              ]
+                            : [
+                                ...(project.status === 'confirmed'
+                                  ? [{ label: 'Receive', onSelect: () => setReceivingProject(project), tone: 'success' as const }]
+                                  : []),
+                                ...(project.status === 'confirmed'
+                                  ? [{
+                                      label: hasSchedule ? 'Manage schedule' : 'Set payment plan',
+                                      onSelect: () => onManageSchedule(project),
+                                    }]
+                                  : []),
+                                { label: 'Edit', onSelect: () => onEdit(project) },
+                                ...(project.status === 'confirmed'
+                                  ? [{ label: 'Cancel', onSelect: () => onCancelProject(project), tone: 'warning' as const }]
+                                  : []),
+                                {
+                                  label: isDeleting ? 'Deleting…' : 'Delete',
+                                  onSelect: () => onDelete(project.id),
+                                  tone: 'danger' as const,
+                                  disabled: isDeleting,
+                                },
+                              ]
 
                         return (
                           <m.div
@@ -224,7 +341,7 @@ export function ProjectList({
                                 ? { opacity: 1 }
                                 : {
                                     opacity: 1,
-                                    y: 0,
+                                    y: isHovered ? -1 : 0,
                                     scale: isHighlighted ? [1, 1.006, 1] : 1,
                                   }
                             }
@@ -238,18 +355,14 @@ export function ProjectList({
                                     layout: { duration: 0.26, ease },
                                   }
                             }
-                            className="flex items-center gap-3 px-5 py-4 transition-colors"
+                            className="project-row flex items-center gap-3 px-5 py-4"
                             style={{
                               background: isHighlighted
                                 ? 'linear-gradient(90deg, rgba(28, 40, 82, 0.82) 0%, rgba(13, 19, 44, 0.62) 100%)'
                                 : isHovered
-                                  ? 'linear-gradient(90deg, rgba(25, 36, 72, 0.64) 0%, rgba(14, 20, 46, 0.44) 100%)'
+                                  ? 'linear-gradient(90deg, rgba(22, 32, 64, 0.56) 0%, rgba(13, 18, 40, 0.40) 100%)'
                                   : 'transparent',
-                              boxShadow: isHighlighted
-                                ? 'inset 3px 0 0 rgba(124, 150, 255, 0.54), inset 0 0 0 1px rgba(154, 177, 255, 0.16), 0 0 32px rgba(73, 106, 207, 0.14)'
-                                : isHovered
-                                  ? 'inset 3px 0 0 rgba(91, 127, 255, 0.40), inset 0 0 0 1px rgba(130, 158, 255, 0.09)'
-                                  : undefined,
+                              boxShadow: mergeShadows(interactiveShadow, ambientShadow),
                               borderBottom: index !== group.items.length - 1 ? '1px solid var(--border)' : undefined,
                             }}
                             onMouseEnter={() => setHoveredId(project.id)}
@@ -276,36 +389,45 @@ export function ProjectList({
                               <p
                                 className="project-row-title truncate"
                                 style={{
-                                  color: project.status === 'cancelled' ? 'var(--text3)' : 'var(--text)',
+                                  color: project.status === 'cancelled' ? 'var(--text3)' : 'rgba(224, 238, 255, 0.98)',
                                   textDecoration: project.status === 'cancelled' ? 'line-through' : undefined,
+                                  textShadow: project.status === 'cancelled' ? 'none' : '0 0 18px rgba(95, 132, 255, 0.12)',
                                 }}
                               >
                                 {project.name}
                               </p>
                               {client ? (
-                                <p className="mt-0.5 text-[11.5px]" style={{ color: 'var(--text2)' }}>
+                                <p className="project-row-client mt-1">
                                   {client.name}
                                 </p>
+                              ) : null}
+                              {project.status === 'confirmed' && !hasSchedule ? (
+                                <button
+                                  type="button"
+                                  className="set-plan-cta mt-1.5 md:hidden"
+                                  onClick={() => onManageSchedule(project)}
+                                >
+                                  Set schedule →
+                                </button>
                               ) : null}
                             </div>
 
                             {/* Status badge — fixed zone */}
-                            <div className="hidden w-24 flex-shrink-0 sm:flex sm:justify-center">
-                              <AnimatePresence mode="wait" initial={false}>
+                            <div className="hidden w-28 flex-shrink-0 sm:flex sm:justify-center">
+                              <AnimatePresence initial={false}>
                                 <m.span
-                                  key={`${project.id}-${project.status}-${project.sub_status ?? ''}`}
+                                  key={project.id}
                                   initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.94, y: 4 }}
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96, y: -4 }}
                                   transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease }}
-                                  className="rounded-md px-2.5 py-[3px] font-medium tracking-wide whitespace-nowrap"
+                                  className={`status-chip whitespace-nowrap ${status.chipClassName ?? ''}`}
                                   style={{
-                                    fontSize: 10.5,
-                                    background: status.dim,
-                                    color: status.color,
-                                    border: `1px solid ${status.border}`,
+                                    borderRadius: 8,
+                                    background: status.chipClassName ? undefined : status.dim,
+                                    color: status.chipClassName ? undefined : status.color,
+                                    border: status.chipClassName ? undefined : `1px solid ${status.border}`,
                                     boxShadow: status.badgeGlow,
-                                    letterSpacing: '0.05em',
                                   }}
                                 >
                                   {displayLabel}
@@ -313,18 +435,37 @@ export function ProjectList({
                               </AnimatePresence>
                             </div>
 
-                            {/* Date — fixed zone */}
-                            <div className="hidden w-24 flex-shrink-0 text-right md:block">
-                              <span
-                                className="tabular-nums"
-                                style={{ fontSize: 11.5, color: 'var(--text2)', letterSpacing: '0.01em' }}
-                              >
-                                {project.expected_date ? formatDate(project.expected_date) : '—'}
-                              </span>
+                            {/* Date / schedule badge — fixed zone */}
+                            <div className="hidden w-36 flex-shrink-0 text-right md:flex md:flex-col md:items-end md:justify-center">
+                              {project.status === 'confirmed' && hasSchedule ? (
+                                <span
+                                  className="project-schedule-pill"
+                                  style={{
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  {scheduledCountByProject.get(project.id)} entries
+                                </span>
+                              ) : project.status === 'confirmed' ? (
+                                <button
+                                  type="button"
+                                  className="set-plan-cta"
+                                  onClick={() => onManageSchedule(project)}
+                                >
+                                  Set schedule →
+                                </button>
+                              ) : (
+                                <span
+                                  className="tabular-nums"
+                                  style={{ fontSize: 11.5, color: 'var(--text2)', letterSpacing: '0.01em' }}
+                                >
+                                  {project.expected_date ? formatDate(project.expected_date) : '—'}
+                                </span>
+                              )}
                             </div>
 
                             {/* Amount — fixed zone */}
-                            <div className="w-24 flex-shrink-0 text-right">
+                            <div className="w-32 flex-shrink-0 text-right">
                               <span
                                 className="tabular-nums"
                                 style={{
@@ -348,29 +489,14 @@ export function ProjectList({
 
                             {/* Actions — fixed zone */}
                             <div
-                              className="w-8 flex-shrink-0 flex items-center justify-end"
+                              className="w-10 flex-shrink-0 flex items-center justify-end"
                               style={{
                                 opacity: isHovered || isHighlighted || isDeleting ? 1 : 0.86,
                               }}
                             >
                               <ActionMenu
                                 label={`Actions for ${project.name}`}
-
-                                items={[
-                                  ...(canReceive(project.status)
-                                    ? [{ label: 'Receive', onSelect: () => setReceivingProject(project), tone: 'success' as const }]
-                                    : []),
-                                  { label: 'Edit', onSelect: () => onEdit(project) },
-                                  ...(project.status === 'pending' || project.status === 'confirmed'
-                                    ? [{ label: 'Cancel', onSelect: () => onCancelProject(project), tone: 'warning' as const }]
-                                    : []),
-                                  {
-                                    label: isDeleting ? 'Deleting…' : 'Delete',
-                                    onSelect: () => onDelete(project.id),
-                                    tone: 'danger' as const,
-                                    disabled: isDeleting,
-                                  },
-                                ]}
+                                items={actionItems}
                               />
                             </div>
                           </m.div>

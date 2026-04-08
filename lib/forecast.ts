@@ -1,8 +1,8 @@
-import type { Payment, Project, Settings, ForecastMonth } from '@/types'
+import type { Payment, ScheduleEntry, Settings, ForecastMonth } from '@/types'
 
 export function computeForecast(
   payments: Payment[],
-  projects: Project[],
+  scheduleEntries: ScheduleEntry[],
   settings: Settings,
   today: Date = new Date()
 ): ForecastMonth[] {
@@ -41,19 +41,18 @@ export function computeForecast(
     const fy = forecastDate.getFullYear()
     const fm = forecastDate.getMonth()
 
-    const confirmed = projects
-      .filter(p => {
-        if (p.status !== 'confirmed') return false
-        if (!p.expected_date) return false
-        const d = new Date(p.expected_date + 'T00:00:00')
+    const scheduled = scheduleEntries
+      .filter(e => {
+        if (e.status !== 'scheduled') return false
+        const d = new Date(e.expected_date + 'T00:00:00')
         return d.getFullYear() === fy && d.getMonth() === fm
       })
-      .reduce((sum, p) => sum + (p.expected_amount ?? 0), 0)
+      .reduce((sum, e) => sum + e.amount, 0)
 
     result.push({
       month: forecastDate,
-      projected: baselineAvg + confirmed,
-      isLean: (baselineAvg + confirmed) < settings.survival_budget,
+      projected: baselineAvg + scheduled,
+      isLean: (baselineAvg + scheduled) < settings.survival_budget,
       isEstimated,
     })
   }

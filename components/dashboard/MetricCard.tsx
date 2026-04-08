@@ -4,11 +4,14 @@ interface MetricCardProps {
   valueColor?: string
   subtitle?: string
   subtitleColor?: string
+  badge?: React.ReactNode
+  badgeTone?: 'neutral' | 'positive' | 'negative'
   /** When true, renders a designed empty state instead of the value */
   isEmpty?: boolean
   emptyMessage?: string
   /** Optional node rendered below the empty message (e.g. a link) */
   emptyAction?: React.ReactNode
+  variant?: 'default' | 'hero' | 'secondary'
   className?: string
 }
 
@@ -28,24 +31,31 @@ export function MetricCard({
   valueColor,
   subtitle,
   subtitleColor,
+  badge,
+  badgeTone = 'neutral',
   isEmpty,
   emptyMessage,
   emptyAction,
+  variant = 'default',
   className = '',
 }: MetricCardProps) {
   const glowClass = valueGlowClass(valueColor)
 
   return (
     <div
-      className={`panel-surface card-interactive rounded-xl p-5 flex flex-col gap-3 ${className}`}
+      className={`metric-card panel-surface card-interactive rounded-xl p-4 flex flex-col gap-1.5 ${className}`}
+      data-variant={variant}
       style={{
         border: '1px solid var(--border)',
       }}
     >
-      <span className="card-label">{label}</span>
+      <div className="flex items-start justify-between gap-3">
+        <span className="metric-card__label">{label}</span>
+        {badge ? <span className="metric-card__badge" data-tone={badgeTone}>{badge}</span> : null}
+      </div>
 
       {isEmpty ? (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           <span style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.5 }}>
             {emptyMessage ?? 'Nothing here yet'}
           </span>
@@ -58,14 +68,14 @@ export function MetricCard({
       ) : (
         <>
           <span
-            className={`metric-value ${glowClass}`}
+            className={`metric-card__value metric-value ${glowClass}`}
             style={{ color: valueColor ?? 'var(--text)', lineHeight: 1.1 }}
           >
             {value}
           </span>
           {subtitle && (
             <span
-              className="card-subtitle"
+              className="metric-card__subtitle card-subtitle"
               style={{ color: subtitleColor ?? 'var(--text2)' }}
             >
               {subtitle}

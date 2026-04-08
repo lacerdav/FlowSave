@@ -41,7 +41,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between gap-1.5 rounded-xl border border-[rgba(169,190,255,0.14)] bg-[linear-gradient(180deg,rgba(14,19,41,0.88)_0%,rgba(9,13,30,0.8)_100%)] py-2 pr-3 pl-3.5 text-sm whitespace-nowrap text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-[border-color,box-shadow,background-color,color] outline-none select-none hover:border-[rgba(177,197,255,0.2)] focus-visible:border-[rgba(126,151,255,0.52)] focus-visible:ring-4 focus-visible:ring-[rgba(91,127,255,0.12)] focus-visible:shadow-[0_0_24px_rgba(91,127,255,0.14)] disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-[rgba(255,91,127,0.5)] aria-invalid:ring-4 aria-invalid:ring-[rgba(255,91,127,0.14)] data-placeholder:text-[rgba(240,240,255,0.26)] data-[size=default]:h-11 data-[size=sm]:h-10 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "interactive flex w-full items-center justify-between gap-1.5 rounded-xl border border-[rgba(169,190,255,0.14)] bg-[linear-gradient(180deg,rgba(14,19,41,0.88)_0%,rgba(9,13,30,0.8)_100%)] py-2 pr-3 pl-3.5 text-sm whitespace-nowrap text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-[border-color,box-shadow,background-color,color,transform] outline-none select-none hover:-translate-y-px hover:border-[rgba(177,197,255,0.2)] focus-visible:border-[rgba(126,151,255,0.52)] focus-visible:ring-4 focus-visible:ring-[rgba(91,127,255,0.12)] focus-visible:shadow-[0_0_24px_rgba(91,127,255,0.14)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 aria-invalid:border-[rgba(255,91,127,0.5)] aria-invalid:ring-4 aria-invalid:ring-[rgba(255,91,127,0.14)] data-placeholder:text-[rgba(240,240,255,0.26)] data-[size=default]:h-11 data-[size=sm]:h-10 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -117,7 +117,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-xl px-3 py-2 pr-8 text-sm text-[rgba(240,240,255,0.72)] outline-hidden select-none focus:bg-[rgba(91,127,255,0.16)] focus:text-[var(--text)] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "interactive relative flex w-full items-center gap-1.5 rounded-xl px-3 py-2 pr-8 text-sm text-[rgba(240,240,255,0.72)] outline-hidden select-none transition-[background,color,transform,box-shadow] hover:-translate-y-px focus:bg-[rgba(91,127,255,0.16)] focus:text-[var(--text)] data-disabled:pointer-events-none data-disabled:opacity-50 data-disabled:hover:translate-y-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
@@ -157,7 +157,7 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={cn(
-        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-transparent py-1 text-[var(--text3)] [&_svg:not([class*='size-'])]:size-4",
+        "interactive top-0 z-10 flex w-full items-center justify-center bg-transparent py-1 text-[var(--text3)] transition-[color,transform] hover:-translate-y-px [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -176,7 +176,7 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={cn(
-        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-transparent py-1 text-[var(--text3)] [&_svg:not([class*='size-'])]:size-4",
+        "interactive bottom-0 z-10 flex w-full items-center justify-center bg-transparent py-1 text-[var(--text3)] transition-[color,transform] hover:-translate-y-px [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

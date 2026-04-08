@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProjectsPageClient } from '@/components/projects/ProjectsPageClient'
-import type { Client, Project } from '@/types'
+import type { Client, Project, ScheduleEntry } from '@/types'
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: projects }, { data: clients }] = await Promise.all([
+  const [{ data: projects }, { data: clients }, { data: scheduleRows }] = await Promise.all([
     supabase
       .from('projects')
       .select('*')
@@ -19,6 +19,11 @@ export default async function ProjectsPage() {
       .select('id, name, currency')
       .eq('user_id', user.id)
       .order('name'),
+    supabase
+      .from('payment_schedule')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('expected_date', { ascending: true }),
   ])
 
   return (
@@ -30,6 +35,7 @@ export default async function ProjectsPage() {
       <div className="fade-up-section page-content-stack">
         <ProjectsPageClient
           initialProjects={(projects ?? []) as Project[]}
+          initialScheduleEntries={(scheduleRows ?? []) as ScheduleEntry[]}
           clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
         />
       </div>

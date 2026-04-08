@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -8,79 +8,89 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Textarea } from '@/components/ui/textarea'
-import { DatePicker } from '@/components/ui/date-picker'
-import { formatCurrency } from '@/lib/utils'
-import type { Client, Payment, Project } from '@/types'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import type { PaymentCreateResponse } from '@/types'
 
-interface Props {
-  project: Project
-  client: Pick<Client, 'id' | 'name' | 'currency'> | null
-  open: boolean
-  onClose: () => void
-  /** Called with the newly-created payment and the updated project on success */
-  onSuccess: (payment: Payment, updatedProject: Project) => void
+interface EntryDetails {
+  id: string
+  projectName: string
+  clientName: string | null
+  amount: number
+  currency: string
+  expectedDate: string
+  label: string | null
 }
 
-export function MarkReceivedModal({ project, client, open, onClose, onSuccess }: Props) {
-  const currency = client?.currency ?? 'USD'
-  const today = new Date().toISOString().split('T')[0]
+interface Props {
+  entry: EntryDetails | null
+  open: boolean
+  onClose: () => void
+  onSuccess: (result: PaymentCreateResponse) => void
+}
 
-  const [amount, setAmount] = useState<number | null>(project.expected_amount)
-  const [date, setDate] = useState(today)
+export function MarkScheduleReceivedModal({ entry, open, onClose, onSuccess }: Props) {
+  const [amount, setAmount] = useState<number | null>(null)
+  const [date, setDate] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleClose() {
-    if (loading) return
+  useEffect(() => {
+    if (!entry || !open) return
+    setAmount(entry.amount)
+    setDate(entry.expectedDate)
+    setNotes('')
     setError(null)
-    onClose()
-  }
+  }, [entry, open])
+
+  if (!entry) return null
 
   async function handleSubmit(e: React.FormEvent) {
+    if (!entry) return
+
     e.preventDefault()
+
     const parsedAmount = amount ?? NaN
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Enter a valid amount.')
+      return
+    }
 
     setLoading(true)
     setError(null)
 
-    const res = await fetch(`/api/projects/${project.id}/receive`, {
+    const res = await fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         amount: parsedAmount,
-        currency,
+        currency: entry.currency,
         received_at: date,
         notes: notes.trim() || null,
+        schedule_entry_id: entry.id,
       }),
     })
 
-    const json = await res.json().catch(() => ({})) as {
-      project?: Project
-      payment?: Payment
-      error?: string
-    }
-
+    const json = await res.json().catch(() => ({})) as PaymentCreateResponse & { error?: string }
     if (!res.ok) {
-      setError(json.error ?? 'Failed to mark as received.')
+      setError(json.error ?? 'Failed to mark scheduled payment as received.')
       setLoading(false)
       return
     }
 
     setLoading(false)
-    setError(null)
-    onSuccess(json.payment!, json.project!)
+    onSuccess(json)
     onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && handleClose()}>
+    <Dialog open={open} onOpenChange={next => !next && !loading && onClose()}>
       <DialogContent
-        className="sm:max-w-[420px]"
+        className="sm:max-w-[440px]"
         style={{
           background: 'linear-gradient(180deg, rgba(15, 20, 45, 0.98) 0%, rgba(9, 13, 31, 0.96) 100%)',
           border: '1px solid rgba(148, 174, 252, 0.20)',
@@ -88,51 +98,40 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
         }}
       >
         <DialogHeader className="space-y-2">
-          <p className="section-label">Mark as received</p>
+          <p className="section-label">Mark scheduled payment as received</p>
           <DialogTitle className="receive-modal__project">
-            {project.name}
+            {entry.projectName}
           </DialogTitle>
           <div className="receive-modal__meta">
-            {client ? (
-              <span className="receive-modal__client">{client.name}</span>
-            ) : (
-              <span className="receive-modal__client" data-muted="true">No client linked</span>
-            )}
-            {project.expected_amount != null ? (
-              <span className="status-chip">
-                {formatCurrency(project.expected_amount, currency)}
-              </span>
-            ) : null}
+            <span className="receive-modal__client" data-muted={entry.clientName ? undefined : 'true'}>
+              {entry.clientName ?? 'No client linked'}
+            </span>
+            <span className="status-chip">
+              {formatCurrency(entry.amount, entry.currency)}
+            </span>
           </div>
           <p className="dialog-subtitle">
-            Confirm the payment details below to move this project into the received state.
+            {entry.label ?? 'Scheduled payment'} due {formatDate(entry.expectedDate)}.
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-1">
-          {/* Amount */}
+        <form onSubmit={handleSubmit} className="mt-1 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="receive-amount" className="form-label">Amount received</Label>
+            <Label htmlFor="schedule-receive-amount" className="form-label">Amount received</Label>
             <MoneyInput
-              id="receive-amount"
-              currency={currency}
+              id="schedule-receive-amount"
               value={amount}
               onValueChange={setAmount}
-              required
+              currency={entry.currency}
               disabled={loading}
+              required
             />
-            {project.expected_amount != null && amount != null && project.expected_amount !== amount && (
-              <p style={{ fontSize: 11, color: 'var(--text3)' }}>
-                Expected: {formatCurrency(project.expected_amount, currency)}
-              </p>
-            )}
           </div>
 
-          {/* Date */}
           <div className="space-y-2">
-            <Label htmlFor="receive-date" className="form-label">Date received</Label>
+            <Label htmlFor="schedule-receive-date" className="form-label">Date received</Label>
             <DatePicker
-              id="receive-date"
+              id="schedule-receive-date"
               value={date}
               onChange={setDate}
               disabled={loading}
@@ -140,12 +139,11 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
             />
           </div>
 
-          {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="receive-notes" className="form-label">Notes (optional)</Label>
+            <Label htmlFor="schedule-receive-notes" className="form-label">Notes (optional)</Label>
             <Textarea
-              id="receive-notes"
-              placeholder="Invoice #, reference…"
+              id="schedule-receive-notes"
+              placeholder="Invoice #, bank transfer, payout reference…"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
@@ -155,9 +153,9 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
             />
           </div>
 
-          {error && (
+          {error ? (
             <p style={{ fontSize: 12, color: 'var(--red)' }}>{error}</p>
-          )}
+          ) : null}
 
           <div className="flex items-center gap-3 pt-1">
             <Button
@@ -170,7 +168,7 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
             <Button
               type="button"
               variant="ghost"
-              onClick={handleClose}
+              onClick={onClose}
               disabled={loading}
               className="h-10 px-4"
               style={{ color: 'var(--text3)' }}

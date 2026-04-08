@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoneyInput } from '@/components/ui/money-input'
 
 interface Props {
   userId: string
@@ -12,9 +13,9 @@ interface Props {
 }
 
 export function StepTargets({ userId, onNext, onSkip }: Props) {
-  const [salary, setSalary] = useState('')
+  const [salary, setSalary] = useState<number | null>(null)
   const [taxPct, setTaxPct] = useState('25')
-  const [budget, setBudget] = useState('')
+  const [budget, setBudget] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,9 +28,9 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        target_monthly_salary: parseFloat(salary) || 0,
+        target_monthly_salary: salary ?? 0,
         tax_reserve_pct: parseFloat(taxPct) || 25,
-        survival_budget: parseFloat(budget) || 0,
+        survival_budget: budget ?? 0,
       }),
     })
 
@@ -61,14 +62,12 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="salary" className="form-label">Monthly target ($)</Label>
-        <Input
+        <MoneyInput
           id="salary"
-          type="number"
-          min="0"
-          step="100"
           placeholder="5000"
           value={salary}
-          onChange={(e) => setSalary(e.target.value)}
+          onValueChange={setSalary}
+          currency="USD"
         />
       </div>
 
@@ -88,14 +87,12 @@ export function StepTargets({ userId, onNext, onSkip }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="budget" className="form-label">Survival budget ($)</Label>
-        <Input
+        <MoneyInput
           id="budget"
-          type="number"
-          min="0"
-          step="100"
           placeholder="2000"
           value={budget}
-          onChange={(e) => setBudget(e.target.value)}
+          onValueChange={setBudget}
+          currency="USD"
         />
         <p className="text-xs" style={{ color: 'var(--text3)' }}>
           Minimum income to cover essential expenses

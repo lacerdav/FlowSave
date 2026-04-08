@@ -12,6 +12,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      payment_schedule: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          amount: number
+          currency: string
+          expected_date: string
+          status: 'scheduled' | 'received' | 'cancelled'
+          payment_id: string | null
+          label: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          amount: number
+          currency?: string
+          expected_date: string
+          status?: 'scheduled' | 'received' | 'cancelled'
+          payment_id?: string | null
+          label?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string
+          amount?: number
+          currency?: string
+          expected_date?: string
+          status?: 'scheduled' | 'received' | 'cancelled'
+          payment_id?: string | null
+          label?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           id: string

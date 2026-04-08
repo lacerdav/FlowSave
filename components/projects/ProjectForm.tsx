@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DatePicker } from '@/components/ui/date-picker'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Client, EditableProjectStatus, Project, ProjectStatus, ProjectSubStatus } from '@/types'
 
 interface ProjectFormValues {
   name: string
   client_id: string | null
-  expected_amount: string
+  expected_amount: number | null
   expected_date: string
   status: ProjectStatus
   sub_status: ProjectSubStatus | null
@@ -34,6 +35,7 @@ interface Props {
   submitLabel?: string
   title?: string
   description?: string
+  allowStateEditing?: boolean
 }
 
 const STATUS_OPTIONS: { value: EditableProjectStatus; label: string }[] = [
@@ -50,7 +52,7 @@ function blankState(initialValues?: Partial<ProjectFormValues>): ProjectFormValu
   return {
     name: initialValues?.name ?? '',
     client_id: initialValues?.client_id ?? null,
-    expected_amount: initialValues?.expected_amount ?? '',
+    expected_amount: initialValues?.expected_amount ?? null,
     expected_date: initialValues?.expected_date ?? '',
     status: initialValues?.status ?? 'pending',
     sub_status: initialValues?.sub_status ?? 'prospecting',
@@ -61,7 +63,7 @@ function fromProject(p: Project): ProjectFormValues {
   return {
     name: p.name,
     client_id: p.client_id,
-    expected_amount: p.expected_amount != null ? String(p.expected_amount) : '',
+    expected_amount: p.expected_amount,
     expected_date: p.expected_date ?? '',
     status: p.status,
     sub_status: p.sub_status ?? 'prospecting',
@@ -79,6 +81,7 @@ export function ProjectForm({
   submitLabel,
   title,
   description,
+  allowStateEditing = true,
 }: Props) {
   const [fields, setFields] = useState<ProjectFormValues>(
     editing ? fromProject(editing) : blankState(initialValues)
@@ -95,7 +98,6 @@ export function ProjectForm({
   const selectedClient = fields.client_id
     ? clients.find(c => c.id === fields.client_id)
     : null
-  const currencySymbol = selectedClient?.currency === 'BRL' ? 'R$' : '$'
 
   function handleClientChange(value: string | null) {
     if (!value) return
@@ -114,16 +116,23 @@ export function ProjectForm({
     }))
   }
 
+  const isEdit = editing !== null
+  const canEditStatus = allowStateEditing && (!editing || editing.status === 'pending' || editing.status === 'confirmed')
+  const canEditSubStatus = allowStateEditing && !isEdit && isPending
+  const resolvedStatus = canEditStatus ? fields.status : (editing?.status ?? fields.status)
+  const resolvedSubStatus = canEditStatus
+    ? (fields.status === 'pending' ? fields.sub_status : null)
+    : (editing?.sub_status ?? null)
+  const requiresAmountAndDate = resolvedStatus === 'confirmed'
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
     if (!fields.name.trim()) return
 
-    const rawAmount = fields.expected_amount.trim()
-    const amount = rawAmount ? parseFloat(rawAmount) : null
+    const amount = fields.expected_amount
 
-    // confirmed projects require amount + date
-    if (!isPending) {
+    if (requiresAmountAndDate) {
       if (amount === null || isNaN(amount) || amount <= 0) return
       if (!fields.expected_date) return
     }
@@ -138,8 +147,8 @@ export function ProjectForm({
           client_id: fields.client_id,
           expected_amount: amount,
           expected_date: fields.expected_date || null,
-          status: canEditStatus ? fields.status : (editing?.status ?? 'pending'),
-          sub_status: isPending ? fields.sub_status : null,
+          status: resolvedStatus,
+          sub_status: resolvedSubStatus,
         },
         editing?.id ?? null
       )
@@ -153,20 +162,17 @@ export function ProjectForm({
     }
   }
 
-  const isEdit = editing !== null
-  const canEditStatus = !editing || editing.status === 'pending' || editing.status === 'confirmed'
-
   // Submit enabled when name filled; confirmed also needs amount
   const submitDisabled = loading
     || !fields.name.trim()
-    || (!isPending && (!fields.expected_amount || !fields.expected_date))
+    || (requiresAmountAndDate && ((fields.expected_amount ?? 0) <= 0 || !fields.expected_date))
 
   return (
     <form
       onSubmit={handleSubmit}
       className={
         surface === 'panel'
-          ? 'panel-surface-soft rounded-[18px] p-6 space-y-5'
+          ? 'panel-surface-soft card-interactive rounded-[18px] p-6 space-y-5'
           : 'space-y-5'
       }
     >
@@ -242,7 +248,7 @@ export function ProjectForm({
       </div>
 
       {/* Sub-status row — only when pending */}
-      {isPending ? (
+      {canEditSubStatus ? (
         <div className="space-y-2">
           <Label htmlFor="proj-sub-status" className="form-label">Stage</Label>
           <Select
@@ -267,36 +273,24 @@ export function ProjectForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="proj-amount" className="form-label">
-            {isPending ? 'Estimated value' : 'Expected amount'}
-            {isPending ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+            {resolvedStatus === 'pending' ? 'Estimated value' : 'Expected amount'}
+            {resolvedStatus === 'pending' ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
           </Label>
-          <div className="relative">
-            <span
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sm select-none pointer-events-none"
-              style={{ color: 'var(--text3)' }}
-            >
-              {currencySymbol}
-            </span>
-            <Input
-              id="proj-amount"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              placeholder={isPending ? 'Value TBD' : '0.00'}
-              value={fields.expected_amount}
-              onChange={e => setFields(prev => ({ ...prev, expected_amount: e.target.value }))}
-              required={!isPending}
-              disabled={loading}
-              className={selectedClient?.currency === 'BRL' ? 'pl-11' : 'pl-9'}
-            />
-          </div>
+          <MoneyInput
+            id="proj-amount"
+            currency={selectedClient?.currency ?? 'USD'}
+            placeholder={resolvedStatus === 'pending' ? 'Value TBD' : '0.00'}
+            value={fields.expected_amount}
+            onValueChange={value => setFields(prev => ({ ...prev, expected_amount: value }))}
+            required={requiresAmountAndDate}
+            disabled={loading}
+          />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="proj-date" className="form-label">
             Expected date
-            {isPending ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+            {resolvedStatus === 'pending' ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
           </Label>
           <DatePicker
             id="proj-date"

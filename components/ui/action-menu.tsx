@@ -15,7 +15,7 @@ const PANEL_PADDING = 16 // vertical padding
 export interface ActionMenuItem {
   label: string
   onSelect: () => void | Promise<void>
-  tone?: 'default' | 'success' | 'warning' | 'danger'
+  tone?: 'default' | 'accent' | 'success' | 'warning' | 'danger'
   disabled?: boolean
 }
 
@@ -95,10 +95,10 @@ export function ActionMenu({
           id={panelId}
           key="menu"
           role="menu"
-          initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: openUpward ? 6 : -6 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98, y: openUpward ? 4 : -4 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.97, y: openUpward ? 4 : -4 }}
-          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease }}
+          exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98, y: openUpward ? 3 : -3 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15, ease }}
           style={panelStyle}
           className={['action-menu-panel-portal', panelClassName].filter(Boolean).join(' ')}
         >
@@ -108,7 +108,7 @@ export function ActionMenu({
               type="button"
               role="menuitem"
               disabled={item.disabled}
-              className="action-menu-item"
+              className="action-menu-item interactive"
               data-tone={item.tone ?? 'default'}
               onClick={() => {
                 if (item.disabled) return
@@ -132,10 +132,10 @@ export function ActionMenu({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(prev => !prev)}
-        className={['action-menu-trigger', triggerClassName].filter(Boolean).join(' ')}
+        className={['action-menu-trigger', 'interactive', triggerClassName].filter(Boolean).join(' ')}
         whileHover={shouldReduceMotion ? undefined : { y: -1, scale: 1.03 }}
-        whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
-        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease }}
+        whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15, ease }}
       >
         <MoreHorizontal className="size-4" />
       </m.button>

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
-import type { Payment, Project } from '@/types'
+import type { Payment, Project, ScheduleEntry } from '@/types'
 
 type Supabase = SupabaseClient<Database>
 
@@ -16,23 +16,96 @@ function daysDiff(a: string, b: string): number {
 }
 
 /**
- * After a payment is inserted, attempt to find a matching project and link them.
- * Matching criteria:
- *  - same user_id
- *  - same client_id (both null or same value)
- *  - status is 'pending' or 'confirmed' (not yet received or cancelled)
- *  - expected_amount within ±5% of payment amount
- *  - expected_date within ±30 days of received_at
+ * After a payment is inserted, attempt to find a matching schedule entry or project.
  *
- * If multiple candidates match, pick the one with the closest expected_date.
- * Returns the updated payment (with project_id set) or the original payment on no match.
+ * Phase 1 — Schedule entries:
+ *   Find a 'scheduled' entry matching client_id, amount (±5%), and date (±30 days).
+ *   Mark it received, set payment.project_id. If all entries for the project are
+ *   now non-scheduled, flip project.status = 'received'.
+ *
+ * Phase 2 — Project fallback (existing logic):
+ *   If no schedule entry matched, match against pending/confirmed projects directly.
  */
 export async function attemptAutoLink(
   supabase: Supabase,
   userId: string,
   payment: Payment
 ): Promise<Payment> {
-  // Fetch candidate projects for this user + client
+  // ── Phase 1: match against payment_schedule ──────────────────────────────
+  const [{ data: scheduleRows }, { data: projectRows }] = await Promise.all([
+    supabase
+      .from('payment_schedule')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'scheduled'),
+    supabase
+      .from('projects')
+      .select('id, client_id')
+      .eq('user_id', userId),
+  ])
+
+  if (scheduleRows && scheduleRows.length > 0) {
+    const projectClientMap = new Map<string, string | null>(
+      (projectRows ?? []).map(p => [p.id, p.client_id])
+    )
+
+    // Filter candidates
+    const matchingEntries = (scheduleRows as ScheduleEntry[])
+      .filter(e => {
+        const clientId = projectClientMap.get(e.project_id) ?? null
+        if (clientId !== payment.client_id) return false
+        const ratio = Math.abs(e.amount - payment.amount) / payment.amount
+        if (ratio > AMOUNT_TOLERANCE) return false
+        if (daysDiff(e.expected_date, payment.received_at) > DATE_WINDOW_DAYS) return false
+        return true
+      })
+
+    if (matchingEntries.length > 0) {
+      // Pick closest expected_date
+      const best = matchingEntries.reduce((closest, e) =>
+        daysDiff(e.expected_date, payment.received_at) <
+        daysDiff(closest.expected_date, payment.received_at)
+          ? e
+          : closest
+      )
+
+      // Mark entry received
+      await supabase
+        .from('payment_schedule')
+        .update({ status: 'received', payment_id: payment.id })
+        .eq('id', best.id)
+        .eq('user_id', userId)
+
+      // Check if all entries for this project are now non-scheduled
+      const { data: remaining } = await supabase
+        .from('payment_schedule')
+        .select('id')
+        .eq('project_id', best.project_id)
+        .eq('status', 'scheduled')
+        .neq('id', best.id)
+
+      if (!remaining || remaining.length === 0) {
+        await supabase
+          .from('projects')
+          .update({ status: 'received' })
+          .eq('id', best.project_id)
+          .eq('user_id', userId)
+      }
+
+      // Set payment.project_id
+      const { data: updated } = await supabase
+        .from('payments')
+        .update({ project_id: best.project_id })
+        .eq('id', payment.id)
+        .eq('user_id', userId)
+        .select()
+        .single()
+
+      return updated ?? { ...payment, project_id: best.project_id }
+    }
+  }
+
+  // ── Phase 2: project-level fallback ──────────────────────────────────────
   const { data: candidates } = await supabase
     .from('projects')
     .select('*')
@@ -42,33 +115,23 @@ export async function attemptAutoLink(
 
   if (!candidates || candidates.length === 0) return payment
 
-  // Filter by client_id and tolerance windows
   const matching = (candidates as Project[]).filter(p => {
-    // client_id must match exactly (both null or same value)
     if (p.client_id !== payment.client_id) return false
-
-    // Skip projects with no amount or date set yet
     if (p.expected_amount == null || p.expected_date == null) return false
-
-    // Amount within ±5%
     const ratio = Math.abs(p.expected_amount - payment.amount) / payment.amount
     if (ratio > AMOUNT_TOLERANCE) return false
-
-    // Date within ±30 days
     if (daysDiff(p.expected_date, payment.received_at) > DATE_WINDOW_DAYS) return false
-
     return true
   })
 
   if (matching.length === 0) return payment
 
-  // Pick closest expected_date (only projects with non-null date remain after filter above)
-  const best = matching.reduce((closest, p) => {
-    return daysDiff(p.expected_date!, payment.received_at) <
-      daysDiff(closest.expected_date!, payment.received_at)
+  const best = matching.reduce((closest, p) =>
+    daysDiff(p.expected_date!, payment.received_at) <
+    daysDiff(closest.expected_date!, payment.received_at)
       ? p
       : closest
-  })
+  )
 
   return linkPaymentToProject(supabase, payment, best)
 }

@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { EditProjectModal } from './EditProjectModal'
+import { MoveToNegotiatingModal } from './MoveToNegotiatingModal'
+import { PaymentPlanModal } from './PaymentPlanModal'
 import { ProjectForm } from './ProjectForm'
 import { ProjectList } from './ProjectList'
-import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus } from '@/types'
+import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus, ScheduleEntry } from '@/types'
 
 interface Props {
   initialProjects: Project[]
+  initialScheduleEntries: ScheduleEntry[]
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
 }
 
@@ -20,9 +23,12 @@ type SaveValues = {
   sub_status: ProjectSubStatus | null
 }
 
-export function ProjectsPageClient({ initialProjects, clients }: Props) {
+export function ProjectsPageClient({ initialProjects, initialScheduleEntries, clients }: Props) {
   const [projects, setProjects] = useState<Project[]>(initialProjects)
+  const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>(initialScheduleEntries)
   const [editing, setEditing] = useState<Project | null>(null)
+  const [transitioningProject, setTransitioningProject] = useState<Project | null>(null)
+  const [schedulingProject, setSchedulingProject] = useState<Project | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null)
 
@@ -86,10 +92,77 @@ export function ProjectsPageClient({ initialProjects, clients }: Props) {
     if (editing?.id === project.id) setEditing(json)
   }
 
+  async function handleMoveToNegotiating(values: {
+    expected_amount?: number
+    expected_date?: string
+  }) {
+    if (!transitioningProject) return
+
+    const body: {
+      sub_status: ProjectSubStatus
+      expected_amount?: number
+      expected_date?: string
+    } = {
+      sub_status: 'negotiating',
+    }
+
+    if (values.expected_amount !== undefined) {
+      body.expected_amount = values.expected_amount
+    }
+
+    if (values.expected_date) {
+      body.expected_date = values.expected_date
+    }
+
+    const res = await fetch(`/api/projects/${transitioningProject.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    const json = await res.json().catch(() => ({})) as Project & { error?: string }
+    if (!res.ok) throw new Error(json.error ?? 'Failed to move project to negotiating.')
+
+    setProjects(prev => sortProjects(prev.map(project => project.id === json.id ? json : project)))
+    setHighlightedProjectId(json.id)
+    if (editing?.id === json.id) setEditing(json)
+    setTransitioningProject(null)
+  }
+
+  async function handleMoveToConfirmed(project: Project) {
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'confirmed' as ProjectStatus,
+        sub_status: null,
+      }),
+    })
+
+    const json = await res.json().catch(() => ({})) as Project & { error?: string }
+    if (!res.ok) return
+
+    setProjects(prev => sortProjects(prev.map(item => item.id === json.id ? json : item)))
+    setHighlightedProjectId(json.id)
+    if (editing?.id === json.id) setEditing(json)
+    setSchedulingProject(json)
+  }
+
   function handleMarkReceived(_payment: Payment, updatedProject: Project) {
     setProjects(prev => sortProjects(prev.map(p => p.id === updatedProject.id ? updatedProject : p)))
     setHighlightedProjectId(updatedProject.id)
   }
+
+  function handleScheduleUpdate(projectId: string, newEntries: ScheduleEntry[]) {
+    setScheduleEntries(prev => [
+      ...prev.filter(e => e.project_id !== projectId),
+      ...newEntries,
+    ])
+    setHighlightedProjectId(projectId)
+    setSchedulingProject(null)
+  }
+
+  const clientMap = new Map(clients.map(c => [c.id, c]))
 
   return (
     <div className="space-y-6">
@@ -102,13 +175,26 @@ export function ProjectsPageClient({ initialProjects, clients }: Props) {
       <ProjectList
         projects={projects}
         clients={clients}
+        scheduleEntries={scheduleEntries}
         onEdit={setEditing}
+        onMoveToNegotiating={setTransitioningProject}
+        onMoveToConfirmed={handleMoveToConfirmed}
         onCancelProject={handleCancelProject}
         onDelete={handleDelete}
         onMarkReceived={handleMarkReceived}
+        onManageSchedule={setSchedulingProject}
         deletingId={deletingId}
         highlightedProjectId={highlightedProjectId}
       />
+      {transitioningProject ? (
+        <MoveToNegotiatingModal
+          project={transitioningProject}
+          client={transitioningProject.client_id ? (clientMap.get(transitioningProject.client_id) ?? null) : null}
+          open={!!transitioningProject}
+          onClose={() => setTransitioningProject(null)}
+          onSubmit={handleMoveToNegotiating}
+        />
+      ) : null}
       <EditProjectModal
         clients={clients}
         project={editing}
@@ -116,6 +202,16 @@ export function ProjectsPageClient({ initialProjects, clients }: Props) {
         onClose={() => setEditing(null)}
         onSave={handleSave}
       />
+      {schedulingProject && (
+        <PaymentPlanModal
+          project={schedulingProject}
+          client={schedulingProject.client_id ? (clientMap.get(schedulingProject.client_id) ?? null) : null}
+          open={!!schedulingProject}
+          onClose={() => setSchedulingProject(null)}
+          onSuccess={entries => handleScheduleUpdate(schedulingProject.id, entries)}
+          existingEntries={scheduleEntries.filter(e => e.project_id === schedulingProject.id)}
+        />
+      )}
     </div>
   )
 }

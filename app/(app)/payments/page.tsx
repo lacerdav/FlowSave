@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PaymentsPageClient } from '@/components/payments/PaymentsPageClient'
-import type { Client, Payment, Project } from '@/types'
+import type { Client, Payment, Project, ScheduleEntry } from '@/types'
 
 export default async function PaymentsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: payments }, { data: clients }, { data: projects }] = await Promise.all([
+  const [{ data: payments }, { data: clients }, { data: projects }, { data: scheduleRows }] = await Promise.all([
     supabase
       .from('payments')
       .select('*')
@@ -23,6 +23,12 @@ export default async function PaymentsPage() {
       .from('projects')
       .select('*')
       .eq('user_id', user.id),
+    supabase
+      .from('payment_schedule')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'scheduled')
+      .order('expected_date', { ascending: true }),
   ])
 
   return (
@@ -38,6 +44,7 @@ export default async function PaymentsPage() {
           initialPayments={(payments ?? []) as Payment[]}
           clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
           projects={(projects ?? []) as Project[]}
+          scheduleEntries={(scheduleRows ?? []) as ScheduleEntry[]}
         />
       </div>
     </div>

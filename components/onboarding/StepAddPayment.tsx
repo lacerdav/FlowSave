@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Textarea } from '@/components/ui/textarea'
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState<number | null>(null)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
@@ -23,6 +23,10 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (amount == null || amount <= 0) {
+      setError('Enter a valid amount.')
+      return
+    }
     setLoading(true)
     setError(null)
 
@@ -31,7 +35,7 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: clientId,
-        amount: parseFloat(amount),
+        amount,
         currency: 'USD',
         received_at: date,
         notes: notes || null,
@@ -68,14 +72,12 @@ export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="amount" className="form-label">Amount ($)</Label>
-        <Input
+        <MoneyInput
           id="amount"
-          type="number"
-          min="0"
-          step="0.01"
           placeholder="1500"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onValueChange={setAmount}
+          currency="USD"
           required
         />
       </div>

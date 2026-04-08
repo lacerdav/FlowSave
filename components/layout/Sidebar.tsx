@@ -4,6 +4,7 @@ import { m, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  CalendarClockIcon,
   FolderKanbanIcon,
   HandCoinsIcon,
   LayoutGridIcon,
@@ -16,6 +17,7 @@ const navLinks = [
   { href: '/clients', label: 'Clients', icon: UsersIcon },
   { href: '/payments', label: 'Payments', icon: HandCoinsIcon },
   { href: '/projects', label: 'Projects', icon: FolderKanbanIcon },
+  { href: '/upcoming', label: 'Upcoming', icon: CalendarClockIcon },
   { href: '/settings', label: 'Settings', icon: Settings2Icon },
 ]
 
@@ -46,7 +48,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               key={href}
               href={href}
               data-active={isActive ? 'true' : undefined}
-              className="nav-link shrink-0 rounded-[14px]"
+              className="nav-link interactive shrink-0 rounded-[14px]"
               aria-label={label}
               title={collapsed ? label : undefined}
             >
@@ -54,15 +56,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
               <m.span
                 className="nav-label"
                 initial={false}
-                animate={
-                  shouldReduceMotion
-                    ? { opacity: collapsed ? 0 : 1 }
-                    : { opacity: collapsed ? 0 : 1, x: collapsed ? -6 : 0 }
-                }
+                animate={{ opacity: collapsed ? 0 : 1 }}
                 transition={
                   shouldReduceMotion
                     ? { duration: 0 }
-                    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                    : { duration: 0.1, ease: 'easeOut' }
                 }
               >
                 {label}

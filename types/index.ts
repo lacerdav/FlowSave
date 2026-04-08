@@ -12,6 +12,29 @@ export type ProjectStatus = 'pending' | 'confirmed' | 'received' | 'cancelled'
 export type EditableProjectStatus = 'pending' | 'confirmed'
 export type ProjectSubStatus = 'prospecting' | 'negotiating'
 
+export type ScheduleEntry = Database['public']['Tables']['payment_schedule']['Row']
+export type ScheduleEntryStatus = 'scheduled' | 'received' | 'cancelled'
+export type PaymentPlanType = 'one_time' | 'weekly_installments' | 'monthly_installments'
+
+export interface PaymentPlanInput {
+  planType: PaymentPlanType
+  totalAmount: number
+  currency: string
+  firstDate: string        // YYYY-MM-DD
+  installmentCount?: number  // required for weekly/monthly
+}
+
+export interface ScheduleEntryWithContext extends ScheduleEntry {
+  client_id: string | null
+  client_name: string | null
+  project_name: string
+}
+
+export interface PaymentCreateResponse {
+  payment: Payment
+  linked_schedule_entry_id: string | null
+}
+
 export interface ForecastMonth {
   month: Date
   projected: number

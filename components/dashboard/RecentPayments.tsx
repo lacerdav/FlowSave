@@ -23,14 +23,13 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
 
   return (
     <div
-      className="panel-surface card-interactive rounded-xl p-5 flex flex-col"
+      className="panel-surface card-interactive rounded-xl p-4 flex flex-col"
       style={{
         border: '1px solid var(--border)',
-        minHeight: 260,
       }}
     >
-      <div className="mb-4">
-        <p className="card-label">Recent Payments</p>
+      <div className="mb-3">
+        <p className="metric-card__label">Recent Payments</p>
       </div>
 
       {payments.length === 0 ? (
@@ -44,11 +43,11 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {payments.map((p, i) => (
             <div
               key={p.id}
-              className="row-hover flex items-center gap-3 py-2.5 px-1 rounded-lg -mx-1"
+              className="row-hover recent-payment-row flex items-center gap-3 py-2.5 px-2 rounded-xl -mx-2"
               style={{
                 borderBottom:
                   i < payments.length - 1 ? '1px solid var(--border)' : 'none',
@@ -64,8 +63,9 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
               <span
                 className="flex-1 truncate"
                 style={{
-                  fontSize: 13.5,
-                  fontWeight: 500,
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
                   color: hoveredId === p.id ? '#f8f9ff' : 'var(--text)',
                   transition: 'color 120ms ease',
                 }}
@@ -74,11 +74,12 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
               </span>
 
               <span
+                className={p.isPast ? 'metric-value--green' : 'metric-value--blue'}
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   color: p.isPast ? 'var(--green)' : 'var(--accent2)',
-                  letterSpacing: '-0.2px',
+                  letterSpacing: '-0.025em',
                 }}
               >
                 {formatCurrency(p.amount, p.currency)}
