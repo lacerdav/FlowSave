@@ -23,11 +23,13 @@ interface Props {
   scheduleEntries?: ScheduleEntryWithContext[]
   onAdd: (result: PaymentCreateResponse) => void
   onProjectAdd: (project: Project) => void
+  surface?: 'panel' | 'none'
+  showHeader?: boolean
 }
 
 const CREATE_PROJECT_OPTION = '__create_project__'
 
-export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, onProjectAdd }: Props) {
+export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, onProjectAdd, surface = 'panel', showHeader = true }: Props) {
   const [clientId, setClientId] = useState<string>('none')
   const [projectId, setProjectId] = useState<string>('none')
   const [scheduleEntryId, setScheduleEntryId] = useState<string>('none')
@@ -187,19 +189,24 @@ export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, on
   return (
     <form
       onSubmit={handleSubmit}
-      className="payment-form panel-surface-soft card-interactive rounded-[20px] p-6 sm:p-7"
+      className={surface === 'panel' ? 'payment-form panel-surface-soft card-interactive rounded-[20px] p-6 sm:p-7' : 'payment-form space-y-4'}
     >
-      <div className="form-card-header">
-        <p className="section-label">Log payment</p>
-        <h2 className="form-card-title">Capture money with confidence</h2>
-        <p className="form-card-copy">
-          Match the Projects page rhythm with clear fields, stronger hierarchy, and a cleaner payment entry flow.
-        </p>
-      </div>
+      {showHeader && (
+        <div className="form-card-header">
+          <p className="section-label">Log payment</p>
+          <h2 className="form-card-title">Capture money with confidence</h2>
+          <p className="form-card-copy">
+            Match the Projects page rhythm with clear fields, stronger hierarchy, and a cleaner payment entry flow.
+          </p>
+        </div>
+      )}
 
       <div className="payment-form-grid">
         <div className="payment-field">
-          <Label htmlFor="payment-amount" className="form-label">Amount</Label>
+          <Label htmlFor="payment-amount" className="form-label">
+            Amount
+            <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>
+          </Label>
           <MoneyInput
             id="payment-amount"
             currency={currency}
@@ -213,7 +220,10 @@ export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, on
         </div>
 
         <div className="payment-field">
-          <Label htmlFor="payment-date" className="form-label">Date received</Label>
+          <Label htmlFor="payment-date" className="form-label">
+            Date received
+            <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>
+          </Label>
           <DatePicker
             id="payment-date"
             value={date}

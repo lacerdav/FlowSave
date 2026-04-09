@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TrendingUpIcon } from 'lucide-react'
 
 interface HeroMonthCardProps {
   value: string
@@ -21,16 +22,23 @@ export function HeroMonthCard({
     <div className="hero-month-card card-interactive rounded-2xl flex flex-col overflow-hidden">
       {/* Top — This Month */}
       <div className="px-5 pt-5 pb-4 flex flex-col flex-1">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-center gap-1.5">
+          <TrendingUpIcon size={13} style={{ color: 'rgba(34,216,122,0.65)', strokeWidth: 2.2, flexShrink: 0 }} />
           <span className="metric-card__label">This Month</span>
-          {badge && (
-            <span className="metric-card__badge" data-tone={badgeTone}>
-              {badge}
-            </span>
-          )}
         </div>
 
-        <span className="hero-month-card__value block mt-3">{value}</span>
+        <span
+          className="hero-month-card__value block mt-3"
+          style={{ color: 'var(--green)', textShadow: '0 0 40px rgba(34,216,122,0.28), 0 0 20px rgba(34,216,122,0.16)' }}
+        >
+          {value}
+        </span>
+
+        {badge && (
+          <span className="metric-card__badge mt-1.5" data-tone={badgeTone}>
+            {badge}
+          </span>
+        )}
 
         {subtitle && (
           <p className="card-subtitle mt-1.5" style={{ color: 'var(--text2)' }}>

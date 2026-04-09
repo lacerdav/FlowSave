@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { BarChart2Icon } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import {
   Bar,
@@ -151,14 +152,16 @@ export function CashFlowChart({ points, currency = 'USD' }: CashFlowChartProps) 
       <div className="dashboard-card-glow" aria-hidden />
 
       <div className="relative flex flex-col gap-3">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-1">
-            <p className="metric-card__label">Cash Flow</p>
-            <h2 className="dashboard-card-title">Cash flow by month</h2>
-            <p className="dashboard-card-copy">Green received, blue scheduled, red gap.</p>
+        <div className="flex items-start gap-2">
+          {/* Left spacer — mirrors the controls width to keep title truly centered */}
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <BarChart2Icon size={13} style={{ color: 'rgba(124,150,255,0.70)', strokeWidth: 2.2, flexShrink: 0 }} />
+            <p className="metric-card__label">Monthly Cash Flow</p>
           </div>
 
-          <div className="flex flex-col items-start gap-2 lg:items-end">
+          <div className="flex-1 flex flex-col items-end gap-2">
             <div className="segmented-toggle" aria-label="Chart visualization mode">
               <button
                 type="button"

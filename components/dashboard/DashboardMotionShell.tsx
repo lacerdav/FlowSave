@@ -10,7 +10,7 @@ interface DashboardMotionShellProps {
   emptyBanner?: ReactNode
   metricsRow: ReactNode
   middleRow: ReactNode
-  lowerRow: ReactNode
+  lowerRow?: ReactNode
 }
 
 const ease = [0.22, 1, 0.36, 1] as const
@@ -111,16 +111,18 @@ export function DashboardMotionShell({
         {middleRow}
       </m.div>
 
-      <m.div
-        variants={sectionVariants}
-        initial="hidden"
-        animate="visible"
-        transition={
-          shouldReduceMotion ? sectionTransition : { ...sectionTransition, delay: 0.24 }
-        }
-      >
-        {lowerRow}
-      </m.div>
+      {lowerRow ? (
+        <m.div
+          variants={sectionVariants}
+          initial="hidden"
+          animate="visible"
+          transition={
+            shouldReduceMotion ? sectionTransition : { ...sectionTransition, delay: 0.24 }
+          }
+        >
+          {lowerRow}
+        </m.div>
+      ) : null}
     </div>
   )
 }

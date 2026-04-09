@@ -8,7 +8,6 @@ import { PendingCard } from '@/components/dashboard/PendingCard'
 import { CashFlowChart, type ChartPoint } from '@/components/dashboard/CashFlowChart'
 import { DashboardMotionShell } from '@/components/dashboard/DashboardMotionShell'
 import { RecentPayments, type PaymentItem } from '@/components/dashboard/RecentPayments'
-import { SalaryProgress } from '@/components/dashboard/SalaryProgress'
 import type { Client, Payment, Project, ScheduleEntry, Settings } from '@/types'
 
 const CLIENT_COLORS = [
@@ -139,6 +138,17 @@ export default async function DashboardPage() {
   for (const [cur, total] of unscheduledByCurrency) {
     pendingByCurrency.set(cur, (pendingByCurrency.get(cur) ?? 0) + total)
   }
+
+  // ── This month's scheduled entries only ──────────────────────────────────────
+  const thisMonthScheduledByCurrency = scheduleEntries
+    .filter(e => e.expected_date >= monthStart && e.expected_date <= monthEnd)
+    .reduce((map, e) => {
+      map.set(e.currency, (map.get(e.currency) ?? 0) + e.amount)
+      return map
+    }, new Map<string, number>())
+
+  const thisMonthPendingUsd = Math.round((thisMonthScheduledByCurrency.get('USD') ?? 0) * 100) / 100
+  const thisMonthPendingBrl = Math.round((thisMonthScheduledByCurrency.get('BRL') ?? 0) * 100) / 100
 
   const pendingCount = scheduleEntries.length + unscheduledProjects.length
 
@@ -308,9 +318,12 @@ export default async function DashboardPage() {
           <SalaryGapCard
             gap={salaryGap}
             target={settings.target_monthly_salary}
+            received={totalThisMonth}
             currency={primaryCurrency}
           />
           <PendingCard
+            thisMonthUsdAmount={thisMonthPendingUsd}
+            thisMonthBrlAmount={thisMonthPendingBrl}
             usdAmount={pendingUsdAmount}
             brlAmount={pendingBrlAmount}
             pendingCount={pendingCount}
@@ -321,13 +334,6 @@ export default async function DashboardPage() {
       }
       middleRow={
         <CashFlowChart points={chartPoints} currency={primaryCurrency} />
-      }
-      lowerRow={
-        <SalaryProgress
-          received={totalThisMonth}
-          target={settings.target_monthly_salary}
-          currency={primaryCurrency}
-        />
       }
     />
   )

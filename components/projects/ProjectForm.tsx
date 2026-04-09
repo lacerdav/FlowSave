@@ -36,6 +36,7 @@ interface Props {
   title?: string
   description?: string
   allowStateEditing?: boolean
+  onStatusChange?: (status: ProjectStatus, subStatus: ProjectSubStatus | null) => void
 }
 
 const STATUS_OPTIONS: { value: EditableProjectStatus; label: string }[] = [
@@ -82,6 +83,7 @@ export function ProjectForm({
   title,
   description,
   allowStateEditing = true,
+  onStatusChange,
 }: Props) {
   const [fields, setFields] = useState<ProjectFormValues>(
     editing ? fromProject(editing) : blankState(initialValues)
@@ -108,12 +110,13 @@ export function ProjectForm({
   function handleStatusChange(value: string | null) {
     if (!value) return
     const status = value as ProjectStatus
+    const newSubStatus = status === 'pending' ? (fields.sub_status ?? 'prospecting') : null
     setFields(prev => ({
       ...prev,
       status,
-      // reset sub_status when switching away from pending
-      sub_status: status === 'pending' ? (prev.sub_status ?? 'prospecting') : null,
+      sub_status: newSubStatus,
     }))
+    onStatusChange?.(status, newSubStatus)
   }
 
   const isEdit = editing !== null
@@ -190,7 +193,10 @@ export function ProjectForm({
 
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="proj-name" className="form-label">Project name</Label>
+        <Label htmlFor="proj-name" className="form-label">
+          Project name
+          <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>
+        </Label>
         <Input
           id="proj-name"
           type="text"
@@ -253,9 +259,12 @@ export function ProjectForm({
           <Label htmlFor="proj-sub-status" className="form-label">Stage</Label>
           <Select
             value={fields.sub_status ?? 'prospecting'}
-            onValueChange={(v: string | null) =>
-              v && setFields(prev => ({ ...prev, sub_status: v as ProjectSubStatus }))
-            }
+            onValueChange={(v: string | null) => {
+              if (!v) return
+              const newSubStatus = v as ProjectSubStatus
+              setFields(prev => ({ ...prev, sub_status: newSubStatus }))
+              onStatusChange?.(fields.status, newSubStatus)
+            }}
           >
             <SelectTrigger>
               <SelectValue />
@@ -274,7 +283,9 @@ export function ProjectForm({
         <div className="space-y-2">
           <Label htmlFor="proj-amount" className="form-label">
             {resolvedStatus === 'pending' ? 'Estimated value' : 'Expected amount'}
-            {resolvedStatus === 'pending' ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+            {resolvedStatus === 'pending'
+              ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span>
+              : <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>}
           </Label>
           <MoneyInput
             id="proj-amount"
@@ -290,7 +301,9 @@ export function ProjectForm({
         <div className="space-y-2">
           <Label htmlFor="proj-date" className="form-label">
             Expected date
-            {resolvedStatus === 'pending' ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span> : null}
+            {resolvedStatus === 'pending'
+              ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span>
+              : <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>}
           </Label>
           <DatePicker
             id="proj-date"

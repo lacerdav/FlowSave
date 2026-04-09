@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { AddProjectModal } from './AddProjectModal'
 import { EditProjectModal } from './EditProjectModal'
 import { MoveToNegotiatingModal } from './MoveToNegotiatingModal'
 import { PaymentPlanModal } from './PaymentPlanModal'
-import { ProjectForm } from './ProjectForm'
 import { ProjectList } from './ProjectList'
 import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus, ScheduleEntry } from '@/types'
 
@@ -26,6 +26,7 @@ type SaveValues = {
 export function ProjectsPageClient({ initialProjects, initialScheduleEntries, clients }: Props) {
   const [projects, setProjects] = useState<Project[]>(initialProjects)
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>(initialScheduleEntries)
+  const [showAddProject, setShowAddProject] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
   const [transitioningProject, setTransitioningProject] = useState<Project | null>(null)
   const [schedulingProject, setSchedulingProject] = useState<Project | null>(null)
@@ -64,6 +65,7 @@ export function ProjectsPageClient({ initialProjects, initialScheduleEntries, cl
       if (!res.ok) throw new Error(json.error ?? 'Failed to add project.')
       setProjects(prev => sortProjects([...prev, json]))
       setHighlightedProjectId(json.id)
+      setShowAddProject(false)
     }
   }
 
@@ -166,12 +168,14 @@ export function ProjectsPageClient({ initialProjects, initialScheduleEntries, cl
 
   return (
     <div className="space-y-6">
-      <ProjectForm
-        clients={clients}
-        editing={null}
-        onSave={handleSave}
-        onCancel={() => undefined}
-      />
+      <div className="flex items-center justify-between">
+        <h1 style={{ fontSize: 'clamp(22px,2.4vw,26px)', fontWeight: 640, letterSpacing: '-0.045em', color: 'var(--text)' }}>
+          Projects
+        </h1>
+        <button className="add-entry-btn" onClick={() => setShowAddProject(true)}>
+          + Add Project
+        </button>
+      </div>
       <ProjectList
         projects={projects}
         clients={clients}
@@ -185,6 +189,12 @@ export function ProjectsPageClient({ initialProjects, initialScheduleEntries, cl
         onManageSchedule={setSchedulingProject}
         deletingId={deletingId}
         highlightedProjectId={highlightedProjectId}
+      />
+      <AddProjectModal
+        open={showAddProject}
+        onClose={() => setShowAddProject(false)}
+        onSave={handleSave}
+        clients={clients}
       />
       {transitioningProject ? (
         <MoveToNegotiatingModal

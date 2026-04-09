@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { ReceiptIcon } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export interface PaymentItem {
@@ -23,13 +24,13 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
 
   return (
     <div
-      className="panel-surface card-interactive rounded-xl p-4 flex flex-col"
-      style={{
-        border: '1px solid var(--border)',
-      }}
+      className="recent-payments-card card-interactive rounded-xl p-4 flex flex-col"
     >
       <div className="mb-3">
-        <p className="metric-card__label">Recent Payments</p>
+        <div className="flex items-center justify-center gap-1.5">
+          <ReceiptIcon size={13} style={{ color: 'rgba(34,216,122,0.65)', strokeWidth: 2.2, flexShrink: 0 }} />
+          <p className="metric-card__label">Recent Payments</p>
+        </div>
       </div>
 
       {payments.length === 0 ? (

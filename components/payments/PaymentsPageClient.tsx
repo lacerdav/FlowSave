@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ConfirmActionModal } from '@/components/shared/ConfirmActionModal'
-import { PaymentForm } from './PaymentForm'
+import { AddPaymentModal } from './AddPaymentModal'
 import { EditPaymentModal } from './EditPaymentModal'
 import { PaymentList } from './PaymentList'
 import type {
@@ -42,6 +42,7 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
         }
       })
   )
+  const [showAddPayment, setShowAddPayment] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
   const [confirmingDeletePayment, setConfirmingDeletePayment] = useState<Payment | null>(null)
@@ -108,14 +109,13 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
 
   return (
     <div className="space-y-6">
-      <div className="mx-auto w-full max-w-[860px]">
-        <PaymentForm
-          clients={clients}
-          projects={projectOptions}
-          scheduleEntries={pendingScheduleEntries}
-          onAdd={handleAdd}
-          onProjectAdd={handleProjectAdd}
-        />
+      <div className="flex items-center justify-between">
+        <h1 style={{ fontSize: 'clamp(22px,2.4vw,26px)', fontWeight: 640, letterSpacing: '-0.045em', color: 'var(--text)' }}>
+          Payments
+        </h1>
+        <button className="add-entry-btn" onClick={() => setShowAddPayment(true)}>
+          + Add Payment
+        </button>
       </div>
       <PaymentList
         payments={payments}
@@ -124,6 +124,15 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
         onEdit={setEditingPayment}
         onDelete={handleDelete}
         deletingId={deletingId}
+      />
+      <AddPaymentModal
+        open={showAddPayment}
+        onClose={() => setShowAddPayment(false)}
+        onAdd={handleAdd}
+        onProjectAdd={handleProjectAdd}
+        clients={clients}
+        projects={projectOptions}
+        scheduleEntries={pendingScheduleEntries}
       />
       <EditPaymentModal
         payment={editingPayment}
