@@ -292,7 +292,8 @@ export default async function DashboardPage() {
         ) : undefined
       }
       metricsRow={
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="@container">
+          <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2">
           <HeroMonthCard
             value={monthTotalLabel}
             badge={
@@ -330,6 +331,7 @@ export default async function DashboardPage() {
             subtitle={pendingSubtitle}
           />
           <RecentPayments payments={recentPayments} />
+          </div>
         </div>
       }
       middleRow={

@@ -1,6 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,14 +12,33 @@ import { MoneyInput } from '@/components/ui/money-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Client, EditableProjectStatus, Project, ProjectStatus, ProjectSubStatus } from '@/types'
 
-interface ProjectFormValues {
-  name: string
-  client_id: string | null
-  expected_amount: number | null
-  expected_date: string
-  status: ProjectStatus
-  sub_status: ProjectSubStatus | null
-}
+const projectSchema = z.object({
+  name: z.string().trim().min(1, 'Project name is required'),
+  client_id: z.string().nullable(),
+  status: z.enum(['pending', 'confirmed', 'received', 'cancelled'] as const),
+  sub_status: z.enum(['prospecting', 'negotiating']).nullable(),
+  expected_amount: z.number().nullable(),
+  expected_date: z.string().nullable(),
+}).superRefine((data, ctx) => {
+  if (data.status === 'confirmed') {
+    if (data.expected_amount === null || isNaN(data.expected_amount) || data.expected_amount <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expected_amount'],
+        message: 'Required',
+      })
+    }
+    if (!data.expected_date) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expected_date'],
+        message: 'Required',
+      })
+    }
+  }
+})
+
+type ProjectFormValues = z.infer<typeof projectSchema>
 
 interface Props {
   clients: Pick<Client, 'id' | 'name' | 'currency'>[]
@@ -49,28 +71,6 @@ const SUB_STATUS_OPTIONS: { value: ProjectSubStatus; label: string }[] = [
   { value: 'negotiating', label: 'Negotiating' },
 ]
 
-function blankState(initialValues?: Partial<ProjectFormValues>): ProjectFormValues {
-  return {
-    name: initialValues?.name ?? '',
-    client_id: initialValues?.client_id ?? null,
-    expected_amount: initialValues?.expected_amount ?? null,
-    expected_date: initialValues?.expected_date ?? '',
-    status: initialValues?.status ?? 'pending',
-    sub_status: initialValues?.sub_status ?? 'prospecting',
-  }
-}
-
-function fromProject(p: Project): ProjectFormValues {
-  return {
-    name: p.name,
-    client_id: p.client_id,
-    expected_amount: p.expected_amount,
-    expected_date: p.expected_date ?? '',
-    status: p.status,
-    sub_status: p.sub_status ?? 'prospecting',
-  }
-}
-
 export function ProjectForm({
   clients,
   editing,
@@ -85,94 +85,68 @@ export function ProjectForm({
   allowStateEditing = true,
   onStatusChange,
 }: Props) {
-  const [fields, setFields] = useState<ProjectFormValues>(
-    editing ? fromProject(editing) : blankState(initialValues)
-  )
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setFields(editing ? fromProject(editing) : blankState(initialValues))
-    setError(null)
-  }, [editing, initialValues])
-
-  const isPending = fields.status === 'pending'
-  const selectedClient = fields.client_id
-    ? clients.find(c => c.id === fields.client_id)
-    : null
-
-  function handleClientChange(value: string | null) {
-    if (!value) return
-    const id = value === 'none' ? null : value
-    setFields(prev => ({ ...prev, client_id: id }))
-  }
-
-  function handleStatusChange(value: string | null) {
-    if (!value) return
-    const status = value as ProjectStatus
-    const newSubStatus = status === 'pending' ? (fields.sub_status ?? 'prospecting') : null
-    setFields(prev => ({
-      ...prev,
-      status,
-      sub_status: newSubStatus,
-    }))
-    onStatusChange?.(status, newSubStatus)
-  }
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const isEdit = editing !== null
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: editing ? {
+      name: editing.name,
+      client_id: editing.client_id,
+      expected_amount: editing.expected_amount,
+      expected_date: editing.expected_date ?? '',
+      status: editing.status,
+      sub_status: editing.sub_status ?? 'prospecting',
+    } : {
+      name: initialValues?.name ?? '',
+      client_id: initialValues?.client_id ?? null,
+      expected_amount: initialValues?.expected_amount ?? null,
+      expected_date: initialValues?.expected_date ?? '',
+      status: initialValues?.status ?? 'pending',
+      sub_status: initialValues?.sub_status ?? 'prospecting',
+    }
+  })
+
+  const { watch, handleSubmit, control, setValue, formState: { isSubmitting, errors } } = form
+  const status = watch('status')
+  const clientId = watch('client_id')
+  const selectedClient = clientId ? clients.find(c => c.id === clientId) : null
+
+  const isPending = status === 'pending'
   const canEditStatus = allowStateEditing && (!editing || editing.status === 'pending' || editing.status === 'confirmed')
   const canEditSubStatus = allowStateEditing && !isEdit && isPending
-  const resolvedStatus = canEditStatus ? fields.status : (editing?.status ?? fields.status)
-  const resolvedSubStatus = canEditStatus
-    ? (fields.status === 'pending' ? fields.sub_status : null)
-    : (editing?.sub_status ?? null)
-  const requiresAmountAndDate = resolvedStatus === 'confirmed'
+  const requiresAmountAndDate = status === 'confirmed' || (!canEditStatus && (editing?.status === 'confirmed' || editing?.status === 'received'))
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function onSubmit(data: ProjectFormValues) {
+    setSubmitError(null)
 
-    if (!fields.name.trim()) return
-
-    const amount = fields.expected_amount
-
-    if (requiresAmountAndDate) {
-      if (amount === null || isNaN(amount) || amount <= 0) return
-      if (!fields.expected_date) return
-    }
-
-    setLoading(true)
-    setError(null)
+    const finalStatus = canEditStatus ? data.status : (editing?.status ?? data.status)
+    const finalSubStatus = canEditStatus
+      ? (data.status === 'pending' ? data.sub_status : null)
+      : (editing?.sub_status ?? null)
 
     try {
-      await onSave(
-        {
-          name: fields.name.trim(),
-          client_id: fields.client_id,
-          expected_amount: amount,
-          expected_date: fields.expected_date || null,
-          status: resolvedStatus,
-          sub_status: resolvedSubStatus,
-        },
-        editing?.id ?? null
-      )
-      if (!editing) {
-        setFields(blankState(initialValues))
-      }
+      await onSave({
+        ...data,
+        status: finalStatus,
+        sub_status: finalSubStatus,
+      }, editing?.id ?? null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
-    } finally {
-      setLoading(false)
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong.')
     }
   }
 
-  // Submit enabled when name filled; confirmed also needs amount
-  const submitDisabled = loading
-    || !fields.name.trim()
-    || (requiresAmountAndDate && ((fields.expected_amount ?? 0) <= 0 || !fields.expected_date))
+  const nameVal = watch('name') || ''
+  let submitDisabled = isSubmitting || !nameVal.trim()
+  
+  if (requiresAmountAndDate && (!watch('expected_amount') || !watch('expected_date'))) {
+     submitDisabled = true
+  }
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       className={
         surface === 'panel'
           ? 'panel-surface-soft card-interactive rounded-[18px] p-6 space-y-5'
@@ -195,60 +169,75 @@ export function ProjectForm({
       <div className="space-y-2">
         <Label htmlFor="proj-name" className="form-label">
           Project name
-          <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>
+          <span className="text-[var(--red)] ml-[3px] text-[11px] drop-shadow-[0_0_5px_rgba(255,91,127,0.55)]">*</span>
         </Label>
         <Input
           id="proj-name"
-          type="text"
           placeholder="Website redesign, Branding package…"
-          value={fields.name}
-          onChange={e => setFields(prev => ({ ...prev, name: e.target.value }))}
-          required
-          disabled={loading}
+          {...form.register('name')}
+          disabled={isSubmitting}
         />
+        {errors.name && <p className="text-xs text-[var(--red)]">{errors.name.message}</p>}
       </div>
 
       {/* Row: client + status */}
       <div className={`grid gap-3 ${canEditStatus ? 'grid-cols-1 sm:grid-cols-[1fr_10rem]' : 'grid-cols-1'}`}>
         <div className="space-y-2">
           <Label htmlFor="proj-client" className="form-label">Client (optional)</Label>
-          <Select
-            value={fields.client_id ?? 'none'}
-            onValueChange={handleClientChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="No client">
-                {(v: string | null) => {
-                  if (!v || v === 'none') return 'No client'
-                  return clients.find(c => c.id === v)?.name ?? 'Unknown'
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No client</SelectItem>
-              {clients.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="client_id"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'none'}
+                onValueChange={v => field.onChange(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No client">
+                    {(v: string | null) => {
+                      if (!v || v === 'none') return 'No client'
+                      return clients.find(c => c.id === v)?.name ?? 'Unknown'
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No client</SelectItem>
+                  {clients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         {canEditStatus ? (
           <div className="space-y-2">
             <Label htmlFor="proj-status" className="form-label">Status</Label>
-            <Select
-              value={fields.status}
-              onValueChange={handleStatusChange}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={v => {
+                    field.onChange(v)
+                    const newSubStatus = v === 'pending' ? (form.getValues('sub_status') ?? 'prospecting') : null
+                    setValue('sub_status', newSubStatus)
+                    onStatusChange?.(v as ProjectStatus, newSubStatus)
+                  }}
+                >
+                  <SelectTrigger disabled={isSubmitting}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         ) : null}
       </div>
@@ -257,65 +246,83 @@ export function ProjectForm({
       {canEditSubStatus ? (
         <div className="space-y-2">
           <Label htmlFor="proj-sub-status" className="form-label">Stage</Label>
-          <Select
-            value={fields.sub_status ?? 'prospecting'}
-            onValueChange={(v: string | null) => {
-              if (!v) return
-              const newSubStatus = v as ProjectSubStatus
-              setFields(prev => ({ ...prev, sub_status: newSubStatus }))
-              onStatusChange?.(fields.status, newSubStatus)
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SUB_STATUS_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="sub_status"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'prospecting'}
+                onValueChange={(v: string | null) => {
+                  field.onChange(v)
+                  onStatusChange?.(status, v as ProjectSubStatus)
+                }}
+              >
+                <SelectTrigger disabled={isSubmitting}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUB_STATUS_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       ) : null}
 
-      {/* Row: amount + date — layout adapts by status */}
+      {/* Row: amount + date */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="proj-amount" className="form-label">
-            {resolvedStatus === 'pending' ? 'Estimated value' : 'Expected amount'}
-            {resolvedStatus === 'pending'
-              ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span>
-              : <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>}
+            {isPending ? 'Estimated value' : 'Expected amount'}
+            {isPending
+              ? <span className="text-[var(--text3)] font-normal"> (optional)</span>
+              : <span className="text-[var(--red)] ml-[3px] text-[11px] drop-shadow-[0_0_5px_rgba(255,91,127,0.55)]">*</span>}
           </Label>
-          <MoneyInput
-            id="proj-amount"
-            currency={selectedClient?.currency ?? 'USD'}
-            placeholder={resolvedStatus === 'pending' ? 'Value TBD' : '0.00'}
-            value={fields.expected_amount}
-            onValueChange={value => setFields(prev => ({ ...prev, expected_amount: value }))}
-            required={requiresAmountAndDate}
-            disabled={loading}
+          <Controller
+            control={control}
+            name="expected_amount"
+            render={({ field }) => (
+              <MoneyInput
+                id="proj-amount"
+                currency={selectedClient?.currency ?? 'USD'}
+                placeholder={isPending ? 'Value TBD' : '0.00'}
+                value={field.value}
+                onValueChange={field.onChange}
+                required={requiresAmountAndDate}
+                disabled={isSubmitting}
+              />
+            )}
           />
+          {errors.expected_amount && <p className="text-xs text-[var(--red)]">{errors.expected_amount.message}</p>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="proj-date" className="form-label">
             Expected date
-            {resolvedStatus === 'pending'
-              ? <span style={{ color: 'var(--text3)', fontWeight: 400 }}> (optional)</span>
-              : <span style={{ color: 'rgba(255,91,127,0.85)', marginLeft: '3px', fontSize: '11px', textShadow: '0 0 5px rgba(255,91,127,0.55)' }}>*</span>}
+            {isPending
+              ? <span className="text-[var(--text3)] font-normal"> (optional)</span>
+              : <span className="text-[var(--red)] ml-[3px] text-[11px] drop-shadow-[0_0_5px_rgba(255,91,127,0.55)]">*</span>}
           </Label>
-          <DatePicker
-            id="proj-date"
-            value={fields.expected_date}
-            onChange={v => setFields(prev => ({ ...prev, expected_date: v }))}
-            disabled={loading}
+          <Controller
+            control={control}
+            name="expected_date"
+            render={({ field }) => (
+              <DatePicker
+                id="proj-date"
+                value={field.value ?? ''}
+                onChange={v => field.onChange(v || null)}
+                disabled={isSubmitting}
+              />
+            )}
           />
+          {errors.expected_date && <p className="text-xs text-[var(--red)]">{errors.expected_date.message}</p>}
         </div>
       </div>
 
-      {error && (
-        <p className="text-xs" style={{ color: 'var(--red)' }}>{error}</p>
+      {submitError && (
+        <p className="text-xs text-[var(--red)]">{submitError}</p>
       )}
 
       <div className="form-cta-row" data-align={isEdit ? 'start' : 'center'}>
@@ -324,7 +331,7 @@ export function ProjectForm({
           disabled={submitDisabled}
           className="primary-cta-button h-11 min-w-[12rem] px-6 font-medium"
         >
-          {loading
+          {isSubmitting
             ? isEdit ? 'Saving…' : 'Adding…'
             : submitLabel ?? (isEdit ? 'Save changes' : 'Add project')}
         </Button>
@@ -334,9 +341,8 @@ export function ProjectForm({
             type="button"
             variant="ghost"
             onClick={onCancel}
-            disabled={loading}
-            className="h-11 px-4"
-            style={{ color: 'var(--text3)' }}
+            disabled={isSubmitting}
+            className="h-11 px-4 text-[var(--text3)]"
           >
             Cancel
           </Button>

@@ -1,0 +1,58 @@
+@layer base {
+  /* ── Status dot glow utilities ─────────────────────────── */
+  .dot-glow--green  { box-shadow: var(--glow-green); }
+  .dot-glow--blue   { box-shadow: var(--glow-blue); }
+  .dot-glow--amber  { box-shadow: var(--glow-amber); }
+  .dot-glow--red    { box-shadow: var(--glow-red); }
+
+  /* Status badge glow */
+  .badge-glow--green {
+    box-shadow: 0 0 12px rgba(34, 216, 122, 0.28), 0 0 4px rgba(34, 216, 122, 0.14);
+  }
+  .badge-glow--blue {
+    box-shadow: 0 0 12px rgba(91, 127, 255, 0.30), 0 0 4px rgba(91, 127, 255, 0.16);
+  }
+  .badge-glow--amber {
+    box-shadow: 0 0 10px rgba(245, 166, 35, 0.24), 0 0 4px rgba(245, 166, 35, 0.12);
+  }
+
+  /* ── Fade-up reveal animation ───────────────────────────── */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-up            { animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .fade-up-section    { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+  .fade-up-section-2  { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.13s both; }
+  .fade-up-section-3  { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both; }
+
+  /* ── Reduced motion overrides ────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up,
+    .fade-up-section,
+    .fade-up-section-2,
+    .fade-up-section-3 {
+      animation: none;
+    }
+
+    .surface-action-button,
+    .primary-cta-button,
+    .payment-submit,
+    .card-interactive,
+    .row-hover,
+    .action-menu-trigger,
+    .action-menu-item,
+    .action-menu-panel-portal,
+    .entity-card {
+      transition-duration: 0ms !important;
+      animation: none !important;
+    }
+  }
+}

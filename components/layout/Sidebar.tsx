@@ -1,6 +1,6 @@
 'use client'
 
-import { m, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {

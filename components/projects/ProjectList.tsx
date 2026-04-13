@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'motion/react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MarkReceivedModal } from './MarkReceivedModal'
 import { ActionMenu } from '@/components/ui/action-menu'

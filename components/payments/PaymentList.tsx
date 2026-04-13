@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'motion/react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ActionMenu } from '@/components/ui/action-menu'
 import type { Client, Payment, Project } from '@/types'

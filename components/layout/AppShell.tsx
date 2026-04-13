@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
-import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion'
+import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -65,7 +65,8 @@ export function AppShell({ children, email, plan }: AppShellProps) {
               <PanelLeftCloseIcon className="shell-icon sidebar-toggle-icon" />
             )}
           </button>
-          <main className="app-main relative z-10 pt-[108px] md:pt-14">
+          {/* padding-top driven entirely by --navbar-h / --mobile-nav-h in layout.css */}
+          <main id="main-content" className="app-main relative z-10">
             <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-6 sm:py-6">
               {children}
             </div>

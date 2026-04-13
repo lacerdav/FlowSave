@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { MoreHorizontal } from 'lucide-react'
 import { calcFloatPos } from '@/lib/floating'
 import type { FloatStyle } from '@/lib/floating'

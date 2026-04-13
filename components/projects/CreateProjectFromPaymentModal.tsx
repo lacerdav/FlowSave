@@ -56,6 +56,7 @@ export function CreateProjectFromPaymentModal({
         </DialogHeader>
 
         <ProjectForm
+          key={open ? 'open' : 'closed'}
           clients={clients}
           editing={null}
           onSave={async values => {

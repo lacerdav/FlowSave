@@ -50,6 +50,7 @@ export function EditProjectModal({ clients, project, open, onClose, onSave }: Pr
         </DialogHeader>
 
         <ProjectForm
+          key={project.id}
           clients={clients}
           editing={project}
           onSave={onSave}

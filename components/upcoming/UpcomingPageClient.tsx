@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { m, AnimatePresence, useReducedMotion } from 'motion/react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ActionMenu } from '@/components/ui/action-menu'
 import { MarkScheduleReceivedModal } from './MarkScheduleReceivedModal'

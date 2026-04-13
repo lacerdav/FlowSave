@@ -1,0 +1,406 @@
+@layer base {
+  /* ── Add entry button ─────────────────────────────────────── */
+  .add-entry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    background: linear-gradient(180deg, rgba(91, 127, 255, 0.18) 0%, rgba(55, 80, 200, 0.12) 100%);
+    border: 1px solid rgba(91, 127, 255, 0.30);
+    cursor: pointer;
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  .add-entry-btn:hover {
+    border-color: rgba(91, 127, 255, 0.55);
+    box-shadow: 0 0 18px rgba(91, 127, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.14);
+    transform: translateY(-1px);
+  }
+
+  .add-entry-btn:active {
+    transform: translateY(0px);
+    box-shadow: none;
+  }
+
+  .recent-payment-row {
+    transition:
+      background 140ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  /* ── Form CTA row ─────────────────────────────────────────── */
+  .form-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.25rem;
+  }
+
+  .form-cta-row[data-align='center'] { justify-content: center; }
+  .form-cta-row[data-align='start']  { justify-content: flex-start; }
+
+  .form-support-copy {
+    font-size: 12px;
+    line-height: 1.55;
+    color: rgba(232, 238, 255, 0.66);
+  }
+
+  /* ── Payment form grid ────────────────────────────────────── */
+  .payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .payment-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .payment-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .payment-control-wrap { position: relative; }
+  .money-input-wrap     { position: relative; }
+
+  .payment-currency-symbol,
+  .money-input-symbol {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    user-select: none;
+    color: rgba(230, 238, 255, 0.42);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .money-input-field {
+    appearance: textfield;
+    -moz-appearance: textfield;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .money-input-field::-webkit-outer-spin-button,
+  .money-input-field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* payment-control: !important needed — fights shadcn's utility classes
+     on Select / Input primitives (no @layer alternative without markup change) */
+  .payment-control {
+    border-color: rgba(174, 194, 255, 0.14) !important;
+    background: linear-gradient(180deg, rgba(14, 19, 41, 0.92) 0%, rgba(9, 13, 30, 0.84) 100%) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 0 0 rgba(80, 111, 216, 0) !important;
+  }
+
+  .payment-control:hover {
+    border-color: rgba(184, 203, 255, 0.22) !important;
+    background: linear-gradient(180deg, rgba(15, 21, 45, 0.94) 0%, rgba(10, 15, 34, 0.88) 100%) !important;
+  }
+
+  .payment-control:focus-visible,
+  .payment-control[data-open='true'],
+  .payment-control[aria-expanded='true'] {
+    border-color: rgba(126, 151, 255, 0.56) !important;
+    box-shadow:
+      0 0 0 4px rgba(91, 127, 255, 0.12),
+      0 0 28px rgba(91, 127, 255, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  }
+
+  .payment-amount-input {
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .payment-amount-input::-webkit-outer-spin-button,
+  .payment-amount-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .payment-select-content {
+    border-color: rgba(171, 191, 255, 0.16) !important;
+    background: linear-gradient(180deg, rgba(14, 19, 42, 0.98) 0%, rgba(8, 12, 29, 0.96) 100%) !important;
+    box-shadow:
+      0 28px 64px rgba(3, 7, 20, 0.46),
+      0 0 28px rgba(50, 76, 154, 0.1) !important;
+  }
+
+  .payment-notes { min-height: 6.75rem; }
+
+  /* ── Date picker ──────────────────────────────────────────── */
+  .date-picker { position: relative; }
+
+  .date-picker-trigger {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.7rem;
+    min-height: 44px;
+    padding: 0 0.95rem;
+    border-radius: 0.875rem;
+    border: 1px solid rgba(169, 190, 255, 0.14);
+    background: linear-gradient(180deg, rgba(14, 19, 41, 0.88) 0%, rgba(9, 13, 30, 0.8) 100%);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      background 180ms ease;
+  }
+
+  .date-picker-trigger-value {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .date-picker-trigger:hover { border-color: rgba(177, 197, 255, 0.2); }
+
+  .date-picker-trigger[data-open='true'],
+  .date-picker-trigger:focus-visible {
+    border-color: rgba(126, 151, 255, 0.52);
+    box-shadow:
+      0 0 0 4px rgba(91, 127, 255, 0.12),
+      0 0 24px rgba(91, 127, 255, 0.14);
+    outline: none;
+  }
+
+  .date-picker-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .date-picker-trigger-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: rgba(228, 235, 255, 0.62);
+  }
+
+  /* Legacy (non-portal) */
+  .date-picker-panel {
+    position: absolute;
+    top: calc(100% + 0.7rem);
+    left: 0;
+    z-index: 40;
+    width: min(20rem, calc(100vw - 2rem));
+    padding: 1rem;
+    border-radius: 1.125rem;
+    border: 1px solid rgba(171, 191, 255, 0.14);
+    background: linear-gradient(180deg, rgba(15, 20, 44, 0.97) 0%, rgba(8, 12, 29, 0.95) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 28px 70px rgba(3, 7, 20, 0.48),
+      0 0 38px rgba(43, 66, 135, 0.16);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Portal variant — position set inline via JS */
+  .date-picker-panel-portal {
+    z-index: 9999;
+    width: min(20rem, calc(100vw - 1rem));
+    padding: 1rem;
+    border-radius: 1.125rem;
+    border: 1px solid rgba(171, 191, 255, 0.14);
+    background: linear-gradient(180deg, rgba(15, 20, 44, 0.97) 0%, rgba(8, 12, 29, 0.95) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 28px 70px rgba(3, 7, 20, 0.48),
+      0 0 38px rgba(43, 66, 135, 0.16);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .date-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .date-picker-month {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .date-picker-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 1px solid rgba(171, 191, 255, 0.1);
+    color: rgba(240, 240, 255, 0.68);
+    background: rgba(255, 255, 255, 0.03);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+
+  .date-picker-nav:hover {
+    color: var(--text);
+    border-color: rgba(171, 191, 255, 0.18);
+    background: rgba(91, 127, 255, 0.1);
+  }
+
+  .date-picker-weekdays,
+  .date-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .date-picker-weekday {
+    padding-bottom: 0.35rem;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(240, 240, 255, 0.34);
+  }
+
+  .date-picker-day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.35rem;
+    border-radius: 0.9rem;
+    color: rgba(240, 240, 255, 0.72);
+    background: transparent;
+    transition:
+      color 160ms ease,
+      background 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .date-picker-day:hover {
+    color: var(--text);
+    background: rgba(91, 127, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(123, 151, 247, 0.16);
+    transform: translateY(-1px);
+  }
+
+  .date-picker-day[data-outside='true']  { color: rgba(240, 240, 255, 0.22); }
+  .date-picker-day[data-today='true']    { box-shadow: inset 0 0 0 1px rgba(144, 168, 255, 0.24); }
+
+  .date-picker-day[data-selected='true'] {
+    color: #f8fbff;
+    background: linear-gradient(180deg, rgba(102, 131, 238, 0.98) 0%, rgba(79, 109, 222, 0.98) 100%);
+    box-shadow:
+      0 10px 26px rgba(43, 66, 135, 0.34),
+      0 0 0 1px rgba(187, 205, 255, 0.12) inset;
+  }
+
+  .date-picker-day[data-selected='true'][data-today='true'] {
+    box-shadow:
+      0 10px 26px rgba(43, 66, 135, 0.34),
+      0 0 0 1px rgba(198, 214, 255, 0.16) inset;
+  }
+}
+
+/* ── Phase 4: Primary CTAs in @layer components ────────────────────────────
+   These override shadcn's Button utility classes without !important.
+   @layer components is declared AFTER tailwind's utilities in PostCSS output
+   when using @tailwindcss/postcss v4 with user-defined layer ordering.      */
+@layer components {
+  .payment-submit {
+    border: 1px solid rgba(146, 173, 255, 0.22);
+    background: linear-gradient(180deg, rgba(100, 134, 255, 0.99) 0%, rgba(72, 102, 222, 0.98) 100%);
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-shadow: 0 0 14px rgba(220, 232, 255, 0.28);
+    box-shadow:
+      0 12px 26px rgba(32, 50, 110, 0.24),
+      0 0 20px rgba(78, 108, 208, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      filter 200ms ease,
+      transform 200ms ease;
+  }
+
+  .payment-submit:hover {
+    border-color: rgba(190, 210, 255, 0.38);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow:
+      0 16px 32px rgba(37, 58, 121, 0.28),
+      0 0 46px rgba(80, 110, 218, 0.36),
+      0 0 20px rgba(114, 146, 255, 0.26),
+      0 0 8px rgba(150, 178, 255, 0.16);
+  }
+
+  .payment-submit:active {
+    filter: brightness(0.97) !important;
+    transform: translateY(0px) !important;
+    box-shadow:
+      0 6px 14px rgba(32, 50, 110, 0.20),
+      0 0 14px rgba(78, 108, 208, 0.14) !important;
+    transition-duration: 60ms !important;
+  }
+
+  .primary-cta-button {
+    border: 1px solid rgba(146, 173, 255, 0.22);
+    background: linear-gradient(180deg, rgba(100, 134, 255, 1) 0%, rgba(74, 104, 226, 0.99) 100%);
+    color: #fff;
+    text-shadow: 0 0 14px rgba(220, 232, 255, 0.28);
+    box-shadow:
+      0 14px 30px rgba(34, 52, 114, 0.26),
+      0 0 24px rgba(80, 110, 210, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      filter 200ms ease,
+      transform 200ms ease;
+  }
+
+  .primary-cta-button:hover {
+    border-color: rgba(190, 210, 255, 0.38);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow:
+      0 18px 36px rgba(36, 55, 118, 0.30),
+      0 0 48px rgba(82, 112, 218, 0.38),
+      0 0 22px rgba(114, 146, 255, 0.28),
+      0 0 8px rgba(150, 178, 255, 0.18);
+  }
+
+  .primary-cta-button:active {
+    filter: brightness(0.97) !important;
+    transform: translateY(0px) !important;
+    box-shadow:
+      0 6px 14px rgba(32, 50, 110, 0.22),
+      0 0 16px rgba(78, 108, 208, 0.16) !important;
+    transition-duration: 60ms !important;
+  }
+}

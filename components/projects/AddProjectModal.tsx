@@ -74,6 +74,7 @@ export function AddProjectModal({ open, onClose, onSave, clients }: Props) {
         </DialogHeader>
 
         <ProjectForm
+          key={open ? 'open' : 'closed'}
           clients={clients}
           editing={null}
           onSave={onSave}

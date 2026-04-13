@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { m, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'motion/react'
 
 interface DashboardMotionShellProps {
   heroKicker: ReactNode

@@ -1,0 +1,82 @@
+/* ── FlowSave Design Tokens ───────────────────────────────────────────────── */
+:root {
+  /* Backgrounds — dark to atmospheric light */
+  --bg:            #07071a;
+  --bg2:           #0d0d28;
+  --bg3:           #151a3a;
+  --bg4:           #dfe7ff;
+  --bg5:           #f7f9ff;
+
+  /* Surfaces */
+  --surface:       rgba(255, 255, 255, 0.04);
+  --surface-2:     rgba(255, 255, 255, 0.06);
+  --surface-light: rgba(255, 255, 255, 0.72);
+
+  /* Borders */
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-light:  rgba(15, 23, 42, 0.08);
+
+  /* Text on bright sections */
+  --text-dark:   #101426;
+  --text-dark-2: rgba(16, 20, 38, 0.68);
+  --text-dark-3: rgba(16, 20, 38, 0.42);
+
+  /* Accent */
+  --accent:        #5b7fff;
+  --accent2:       #7c96ff;
+  --accent-dim:    rgba(91, 127, 255, 0.15);
+
+  /* Text */
+  --text:          #f0f0ff;
+  --text2:         rgba(240, 240, 255, 0.62);
+  --text3:         rgba(240, 240, 255, 0.38);
+
+  /* Semantic */
+  --green:         #22d87a;
+  --green-dim:     rgba(34, 216, 122, 0.12);
+  --red:           #ff5b7f;
+  --red-dim:       rgba(255, 91, 127, 0.12);
+  --amber:         #f5a623;
+  --amber-dim:     rgba(245, 166, 35, 0.12);
+
+  /* Semantic glow shadows — used on status dots, badges, and key numbers */
+  --glow-green:  0 0 8px rgba(34, 216, 122, 0.55), 0 0 20px rgba(34, 216, 122, 0.22);
+  --glow-blue:   0 0 8px rgba(91, 127, 255, 0.60), 0 0 20px rgba(91, 127, 255, 0.24);
+  --glow-amber:  0 0 8px rgba(245, 166, 35, 0.55), 0 0 20px rgba(245, 166, 35, 0.20);
+  --glow-red:    0 0 8px rgba(255, 91, 127, 0.55), 0 0 20px rgba(255, 91, 127, 0.20);
+
+  /* shadcn/ui token mapping */
+  --background:             var(--bg);
+  --foreground:             var(--text);
+  --card:                   var(--bg2);
+  --card-foreground:        var(--text);
+  --popover:                var(--bg2);
+  --popover-foreground:     var(--text);
+  --primary:                var(--accent);
+  --primary-foreground:     #ffffff;
+  --secondary:              var(--surface);
+  --secondary-foreground:   var(--text);
+  --muted:                  var(--surface);
+  --muted-foreground:       var(--text2);
+  --accent-foreground:      var(--text);
+  --destructive:            var(--red);
+  --destructive-foreground: #ffffff;
+  --input:                  var(--border-strong);
+  --ring:                   var(--accent);
+  --radius:                 0.5rem;
+
+  /* Sidebar */
+  --sidebar:                   var(--bg2);
+  --sidebar-foreground:        var(--text);
+  --sidebar-primary:           var(--accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:            var(--accent-dim);
+  --sidebar-accent-foreground: var(--accent2);
+  --sidebar-border:            var(--border);
+  --sidebar-ring:              var(--accent);
+
+  /* Layout heights — keep in sync with AppShell padding */
+  --navbar-h:     3.5rem;   /* 56px fixed navbar */
+  --mobile-nav-h: 3.25rem;  /* 52px horizontal mobile sidebar strip */
+}
