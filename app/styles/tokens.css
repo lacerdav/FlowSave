@@ -77,6 +77,9 @@
   --sidebar-ring:              var(--accent);
 
   /* Layout heights — keep in sync with AppShell padding */
-  --navbar-h:     3.5rem;   /* 56px fixed navbar */
-  --mobile-nav-h: 3.25rem;  /* 52px horizontal mobile sidebar strip */
+  --navbar-h:           3.5rem;   /* 56px fixed navbar */
+  --mobile-nav-h:       3.25rem;  /* 52px horizontal mobile sidebar strip */
+
+  /* App shell frame */
+  --content-frame-radius: 18px;
 }

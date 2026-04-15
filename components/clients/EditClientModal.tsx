@@ -11,17 +11,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Client } from '@/types'
+import type { ClientWithStats } from '@/lib/supabase/queries/clients'
 
 interface Props {
-  client: Client | null
+  client: ClientWithStats | null
   open: boolean
   onClose: () => void
   onSave: (values: { name: string; currency: string }, id: string) => Promise<void>
 }
 
 export function EditClientModal({ client, open, onClose, onSave }: Props) {
-  const [name, setName] = useState('')
+  const [name, setName]         = useState('')
   const [currency, setCurrency] = useState('USD')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

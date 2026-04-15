@@ -36,7 +36,7 @@ with 2–10 clients and irregular payment dates.
 
 - Frontend: Next.js 15 + Tailwind CSS 4.2 + shadcn/ui
 - Backend/DB: Supabase (PostgreSQL + Auth + Storage)
-- Auth: Supabase Magic Link (passwordless) → evolving to Email/Password + Google + Apple OAuth (Phase 4.5)
+- Auth: Email/Password + Google + Apple OAuth (Supabase providers)
 - Forms: react-hook-form + zod + @hookform/resolvers (ALL new forms must use this — no exceptions)
 - Payments: Stripe Billing (freemium → $19/month Pro)
 - Email: Resend + React Email
@@ -44,6 +44,7 @@ with 2–10 clients and irregular payment dates.
 - Deploy: Vercel (Hobby for dev, Pro for commercial launch)
 - Analytics: PostHog (free tier)
 - Motion: motion/react (purposeful, subtle only) — migrated from framer-motion package
+- Particles: @tsparticles/react + @tsparticles/slim (v3) — auth page background, grab+repulse interactivity
 
 ---
 
@@ -314,41 +315,40 @@ DO NOT use:
   [x] @property --shimmer-x shimmer animation on .entity-card hover (100% CSS, no JS)
   [x] framer-motion → motion/react across all 8 components (API identical, package updated)
 
-### Phase 4.5 — UI/UX Global Review 🆕 NEXT
-  Goal: every page passes the screenshot test before Phase 5.
+### Phase 4.5 — UI/UX Global Review ✅ COMPLETE
 
-  4.5.1 — App Shell (MacOS Frame Style)
-  [ ] Content area in floating window frame (rounded right, border + drop shadow)
-  [ ] Frame bleeds from left nav — contained "app window in browser" feel
-  [ ] Subtle breadcrumb page title inside frame
-  [ ] Sign Out: bottom of left nav
-  [ ] Upgrade CTA: top-center of app shell
+  4.5.1 — App Shell (MacOS Frame Style) ✅
+  [x] Content area in floating window frame (rounded right, border + drop shadow)
+  [x] Frame bleeds from left nav — contained "app window in browser" feel
+  [x] Sign Out: bottom of left nav (SignOutButton component)
+  [x] Upgrade CTA: top-center of app shell
       FREE → amber glowing "Upgrade to Pro" + pulse
       PRO  → quiet green "PRO ✓" badge
 
-  4.5.2 — Clients Page Overhaul
-  [ ] Card grid matching Projects/Payments visual language
-  [ ] Add Client: top-right only
-  [ ] ClientCard: name, total received, last payment date, active projects count
-  [ ] FREE usage banner (amber, non-dismissible at 2/2; progress variant at 0–1/2)
-  [ ] Client card click → detail/edit modal
+  4.5.2 — Clients Page Overhaul ✅
+  [x] Card grid matching Projects/Payments visual language
+  [x] Add Client: top-right only (AddClientModal)
+  [x] ClientCard: name, total received, last payment date, active projects count
+  [x] FREE usage banner (amber, non-dismissible at 2/2; progress variant at 0–1/2)
+  [x] Client card click → detail/edit modal
 
-  4.5.3 — Auth Pages Redesign
-  [ ] Canvas particle background (tsparticles lite or vanilla canvas)
-      - Slow drift, proximity connections, mouse glow halo, idle pulse
-  [ ] Centered glass card layout
-  [ ] Sign Up fields: first name, last name, email, password, confirm password,
-      freelance role (select), monthly income goal (optional), primary currency
-  [ ] Login fields: email + password
-  [ ] Animated tab toggle Login ↔ Sign Up
-  [ ] Google OAuth + Apple OAuth (Supabase providers must be enabled)
-  [ ] Migration 005: first_name, last_name, freelance_role, primary_currency on users
+  4.5.3 — Auth Pages Redesign ✅
+  [x] Particle background: @tsparticles/react + @tsparticles/slim
+      - grab interactivity (lines to cursor), repulse on click, opacity pulse
+  [x] Centered glass card layout (AuthCard)
+  [x] Two-step Sign Up: Step 1 (name, email, password) → spinner → Step 2 (role, currency, goal)
+  [x] Password strength: 8+ chars, 1 uppercase, 1 number, 1 special char
+  [x] Currency-aware live formatting on Monthly Goal (USD / BRL)
+  [x] Login fields: email + password
+  [x] Animated tab toggle Login ↔ Sign Up
+  [x] Google OAuth + Apple OAuth
+  [x] Migration 005: first_name, last_name, freelance_role, primary_currency on users
 
-  4.5.4 — Cross-Page Consistency
-  [ ] All surfaces: consistent CSS token usage
-  [ ] All hover states: glow + lift + pointer
-  [ ] All pages: designed empty states
-  [ ] Payments, Upcoming, Settings: visual parity check
+  4.5.4 — Cross-Page Consistency ✅
+  [x] All surfaces: consistent CSS token usage
+  [x] All hover states: glow + lift + pointer
+  [x] All pages: designed empty states
+  [x] Payments, Upcoming, Settings: visual parity check
 
 ### Phase 5 — Monetization [ ] NOT STARTED
   [ ] Stripe checkout + webhook
@@ -389,6 +389,23 @@ DO NOT use:
 - Clean up temp files after every task
 - Simple over clever, always
 - Money formatting: BRL → 1.000,00 / USD → 1,000.00
+
+## Technology standards
+
+Always use the latest stable versions of packages and frameworks.
+When implementing UI effects, animations, or interactive features, default to
+industry-standard packages used by premium SaaS products — not custom
+implementations — unless there is a clear reason (bundle size, licensing, etc.).
+
+Guidelines:
+- Particle / WebGL backgrounds → @tsparticles/react + @tsparticles/slim (v3)
+- Charts → Recharts (already in use)
+- Animation → motion/react (already in use)
+- Forms → react-hook-form + zod (already in use)
+- Before writing a custom implementation, check if a well-maintained package exists
+  that is the de-facto standard for that category. If it is ≤ 100KB gzipped and
+  actively maintained, prefer it over custom code.
+- Do not use deprecated packages (framer-motion → motion/react, tsparticles v1/v2 → v3)
 
 ---
 

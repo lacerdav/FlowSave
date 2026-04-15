@@ -206,10 +206,8 @@ export function ProjectList({
         className="panel-surface rounded-xl p-10 text-center"
         style={{ border: '1px solid var(--border)' }}
       >
-        <p className="text-sm font-medium" style={{ color: 'var(--text2)' }}>
-          No projects yet
-        </p>
-        <p className="mt-1.5 text-xs" style={{ color: 'var(--text3)' }}>
+        <p className="form-card-title">No projects yet</p>
+        <p className="mt-2 form-card-copy">
           Add a project above to start tracking future income.
         </p>
         <Link

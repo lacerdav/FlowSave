@@ -11,6 +11,7 @@ import {
   Settings2Icon,
   UsersIcon,
 } from 'lucide-react'
+import { SignOutButton } from '@/components/layout/SignOutButton'
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGridIcon },
@@ -37,7 +38,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
     >
       <div aria-hidden className="sidebar-divider hidden md:block" />
 
-      <nav className="relative flex gap-2 overflow-x-auto px-4 py-3 md:flex-col md:gap-2 md:px-4 md:py-5">
+      {/*
+        Mobile: flex-row, horizontal strip, overflow-x scroll
+        Desktop: flex-col, full height, sign out pinned at bottom via mt-auto
+      */}
+      <nav className="relative flex gap-2 overflow-x-auto px-4 py-3 md:h-full md:flex-col md:overflow-x-visible md:px-4 md:py-5">
         {navLinks.map(({ href, label, icon: Icon }) => {
           const isActive =
             pathname === href ||
@@ -68,6 +73,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
             </Link>
           )
         })}
+
+        {/* Sign out — appears after nav items on mobile, pinned to bottom on desktop */}
+        <SignOutButton collapsed={collapsed} />
       </nav>
     </aside>
   )

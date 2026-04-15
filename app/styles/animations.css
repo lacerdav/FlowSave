@@ -33,6 +33,18 @@
   .fade-up-section-2  { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.13s both; }
   .fade-up-section-3  { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both; }
 
+  /* ── Upgrade CTA amber pulse ────────────────────────────── */
+  @keyframes upgrade-cta-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(245, 166, 35, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.02);
+      border-color: rgba(245, 166, 35, 0.28);
+    }
+    50% {
+      box-shadow: 0 0 22px rgba(245, 166, 35, 0.32), 0 0 44px rgba(220, 140, 18, 0.14);
+      border-color: rgba(245, 166, 35, 0.50);
+    }
+  }
+
   /* ── Reduced motion overrides ────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .fade-up,
@@ -50,7 +62,8 @@
     .action-menu-trigger,
     .action-menu-item,
     .action-menu-panel-portal,
-    .entity-card {
+    .entity-card,
+    .upgrade-link {
       transition-duration: 0ms !important;
       animation: none !important;
     }

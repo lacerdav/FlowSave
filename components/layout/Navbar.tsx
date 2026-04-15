@@ -2,8 +2,6 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import type { Plan } from '@/types'
 
 interface NavbarProps {
@@ -12,14 +10,6 @@ interface NavbarProps {
 }
 
 export function Navbar({ email, plan }: NavbarProps) {
-  const router = useRouter()
-
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
   return (
     <header
       className="app-navbar flex h-14 items-center justify-between px-4 sm:px-6"
@@ -46,7 +36,7 @@ export function Navbar({ email, plan }: NavbarProps) {
         </span>
 
         <span className="plan-badge" data-plan={plan}>
-          {plan}
+          {plan === 'pro' ? 'PRO ✓' : 'FREE'}
         </span>
 
         {plan === 'free' && (
@@ -54,16 +44,9 @@ export function Navbar({ email, plan }: NavbarProps) {
             href="/upgrade"
             className="upgrade-link"
           >
-            Upgrade
+            Upgrade to Pro
           </Link>
         )}
-
-        <button
-          onClick={handleSignOut}
-          className="signout-button"
-        >
-          Sign out
-        </button>
       </div>
     </header>
   )

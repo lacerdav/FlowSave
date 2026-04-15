@@ -1,5 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Client } from '@/types'
+import type { Client, Payment, Project } from '@/types'
+
+export interface ClientWithStats extends Client {
+  total_received: number
+  last_payment_date: string | null
+  // active = status IN ('confirmed', 'pending')
+  active_project_count: number
+}
+
+/**
+ * Enriches a client list with aggregated stats derived from payments and projects.
+ * Runs entirely in JS — no DB view or RPC needed given freelancer data volumes.
+ */
+export function enrichClients(
+  clients: Client[],
+  payments: Pick<Payment, 'client_id' | 'amount' | 'received_at'>[],
+  projects: Pick<Project, 'client_id' | 'status'>[],
+): ClientWithStats[] {
+  return clients.map((client) => {
+    const clientPayments = payments.filter((p) => p.client_id === client.id)
+    const total_received = clientPayments.reduce((sum, p) => sum + p.amount, 0)
+    const last_payment_date = clientPayments.length > 0
+      ? clientPayments
+          .map((p) => p.received_at)
+          .sort((a, b) => b.localeCompare(a))[0]
+      : null
+
+    const active_project_count = projects.filter(
+      (p) => p.client_id === client.id && (p.status === 'confirmed' || p.status === 'pending')
+    ).length
+
+    return { ...client, total_received, last_payment_date, active_project_count }
+  })
+}
 
 export async function getClients(userId: string): Promise<Client[]> {
   const supabase = await createClient()

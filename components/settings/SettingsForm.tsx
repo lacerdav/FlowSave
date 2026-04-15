@@ -79,6 +79,7 @@ export function SettingsForm({ defaultValues }: Props) {
           placeholder="25"
           value={taxPct}
           onChange={(e) => { setTaxPct(e.target.value); setSuccess(false) }}
+          className="payment-control"
         />
         <p className="small-label">Percentage set aside from each payment for taxes</p>
       </div>

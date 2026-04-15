@@ -1,18 +1,17 @@
 'use client'
 
 import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'motion/react'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { ActionMenu } from '@/components/ui/action-menu'
-import type { Client } from '@/types'
+import type { ClientWithStats } from '@/lib/supabase/queries/clients'
 
 interface Props {
-  clients: Client[]
-  onEdit: (client: Client) => void
+  clients: ClientWithStats[]
+  onEdit: (client: ClientWithStats) => void
   onDelete: (id: string) => void
   deletingId: string | null
 }
 
-const CURRENCY_LABELS: Record<string, string> = { USD: 'USD', BRL: 'BRL' }
 const ease = [0.22, 1, 0.36, 1] as const
 
 export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
@@ -28,7 +27,7 @@ export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
           No clients yet
         </p>
         <p className="mx-auto mt-3 max-w-md form-card-copy">
-          Add your first client above and this page will become a polished roster instead of an empty shell.
+          Add your first client and this page becomes a polished roster instead of an empty shell.
         </p>
       </div>
     )
@@ -47,12 +46,18 @@ export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
               exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8, scale: 0.985 }}
               transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease, layout: { duration: 0.24, ease } }}
               whileHover={shouldReduceMotion ? undefined : { y: -2 }}
-              className="entity-card"
+              className="entity-card cursor-pointer"
+              onClick={() => onEdit(client)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Edit ${client.name}`}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEdit(client) }}
             >
+              {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{
                       background: 'var(--accent2)',
                       boxShadow: '0 0 10px rgba(124, 150, 255, 0.38)',
@@ -61,13 +66,12 @@ export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
                   <span className="entity-card__eyebrow">Client</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <span className="status-chip" data-tone="neutral">
-                    {CURRENCY_LABELS[client.currency] ?? client.currency}
+                    {client.currency}
                   </span>
                   <ActionMenu
                     label={`Actions for ${client.name}`}
-
                     items={[
                       { label: 'Edit', onSelect: () => onEdit(client) },
                       {
@@ -81,16 +85,40 @@ export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
                 </div>
               </div>
 
+              {/* Name */}
               <div className="entity-card__stack">
                 <p className="entity-card__title">{client.name}</p>
-                <p className="entity-card__subtitle">
-                  Projects and payments for this client will default to {CURRENCY_LABELS[client.currency] ?? client.currency}.
-                </p>
               </div>
 
+              {/* Stats row */}
+              <div className="client-card-stats">
+                <div className="client-card-stat">
+                  <span className="client-card-stat__label">Total received</span>
+                  <span className="client-card-stat__value" style={{ color: 'var(--green)' }}>
+                    {client.total_received > 0
+                      ? formatCurrency(client.total_received, client.currency)
+                      : <span style={{ color: 'var(--text3)' }}>—</span>
+                    }
+                  </span>
+                </div>
+                <div className="client-card-stat">
+                  <span className="client-card-stat__label">Active projects</span>
+                  <span className="client-card-stat__value">
+                    {client.active_project_count > 0
+                      ? client.active_project_count
+                      : <span style={{ color: 'var(--text3)' }}>—</span>
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer */}
               <div className="entity-card__footer">
                 <div className="entity-card__meta">
-                  Added {formatDate(client.created_at.split('T')[0])}
+                  {client.last_payment_date
+                    ? `Last payment ${formatDate(client.last_payment_date.split('T')[0])}`
+                    : `Added ${formatDate(client.created_at.split('T')[0])}`
+                  }
                 </div>
               </div>
             </m.div>

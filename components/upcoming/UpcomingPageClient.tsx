@@ -80,7 +80,6 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
   const shouldReduceMotion = useReducedMotion()
   const [groups, setGroups] = useState<MonthGroup[]>(initialGroups)
   const [cancelling, setCancelling] = useState<string | null>(null)
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [receivingEntry, setReceivingEntry] = useState<EnrichedEntry | null>(null)
 
   async function handleCancel(entry: EnrichedEntry) {
@@ -152,10 +151,8 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
         className="panel-surface rounded-xl p-12 text-center"
         style={{ border: '1px solid var(--border)' }}
       >
-        <p className="text-sm font-medium" style={{ color: 'var(--text2)' }}>
-          No upcoming payments scheduled
-        </p>
-        <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text3)' }}>
+        <p className="form-card-title">No upcoming payments scheduled</p>
+        <p className="mt-2 form-card-copy">
           Go to Projects → confirm a project → set up a payment plan.
         </p>
       </div>
@@ -189,7 +186,6 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
             >
               <AnimatePresence initial={false}>
                 {group.entries.map((entry, index) => {
-                  const isHovered = hoveredId === entry.id
                   const isCancelling = cancelling === entry.id
                   const actionItems =
                     entry.status === 'scheduled'
@@ -224,19 +220,11 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
                       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease }}
-                      className="flex items-center gap-3 px-5 py-4 transition-colors"
+                      className="list-row-hover flex items-center gap-3 px-5 py-4"
                       style={{
-                        background: isHovered
-                          ? 'linear-gradient(90deg, rgba(25,36,72,0.64) 0%, rgba(14,20,46,0.44) 100%)'
-                          : 'transparent',
-                        boxShadow: isHovered
-                          ? 'inset 3px 0 0 rgba(91,127,255,0.40), inset 0 0 0 1px rgba(130,158,255,0.09)'
-                          : undefined,
                         borderBottom: index !== group.entries.length - 1 ? '1px solid var(--border)' : undefined,
                         opacity: isCancelling ? 0.6 : 1,
                       }}
-                      onMouseEnter={() => setHoveredId(entry.id)}
-                      onMouseLeave={() => setHoveredId(curr => curr === entry.id ? null : curr)}
                     >
                       {/* Project name + client */}
                       <div className="min-w-0 flex-1">
