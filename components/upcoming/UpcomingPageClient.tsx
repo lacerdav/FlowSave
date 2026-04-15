@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { m, AnimatePresence, useReducedMotion } from 'motion/react'
+import { toast } from 'sonner'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ActionMenu } from '@/components/ui/action-menu'
 import { MarkScheduleReceivedModal } from './MarkScheduleReceivedModal'
+import { apiRequest } from '@/lib/api-client'
 import type { PaymentCreateResponse, ScheduleEntryStatus } from '@/types'
 
 export interface EnrichedEntry {
@@ -84,12 +86,12 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
 
   async function handleCancel(entry: EnrichedEntry) {
     setCancelling(entry.id)
-    const res = await fetch(`/api/schedule/${entry.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'cancelled' }),
-    })
-    if (res.ok) {
+    try {
+      await apiRequest(`/api/schedule/${entry.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      }, 'Failed to cancel scheduled payment.')
       setGroups(prev =>
         prev.map(g => ({
           ...g,
@@ -103,8 +105,12 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
           ),
         }))
       )
+      toast.success('Scheduled payment cancelled.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel scheduled payment.')
+    } finally {
+      setCancelling(null)
     }
-    setCancelling(null)
   }
 
   function handleMarkReceived(result: PaymentCreateResponse) {
@@ -132,8 +138,8 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
   }
 
   async function handleDelete(entry: EnrichedEntry) {
-    const res = await fetch(`/api/schedule/${entry.id}`, { method: 'DELETE' })
-    if (res.ok) {
+    try {
+      await apiRequest(`/api/schedule/${entry.id}`, { method: 'DELETE' }, 'Failed to delete scheduled payment.')
       setGroups(prev =>
         prev
           .map(g => {
@@ -142,6 +148,9 @@ export function UpcomingPageClient({ groups: initialGroups }: Props) {
           })
           .filter(g => g.entries.length > 0)
       )
+      toast.success('Scheduled payment deleted.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete scheduled payment.')
     }
   }
 

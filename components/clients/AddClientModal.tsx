@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { apiRequest } from '@/lib/api-client'
 import type { Client } from '@/types'
 
 interface Props {
@@ -49,31 +51,32 @@ export function AddClientModal({ open, onClose, onAdd, onLimitReached, plan, cli
     setLoading(true)
     setError(null)
 
-    const res = await fetch('/api/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), currency }),
-    })
+    try {
+      const json = await apiRequest<Client>('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), currency }),
+      }, 'Failed to add client.')
 
-    const json = await res.json().catch(() => ({}))
+      onAdd(json)
+      setName('')
+      setCurrency('USD')
+      setError(null)
+      setLoading(false)
+      toast.success('Client added.')
+      onClose()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add client.'
 
-    if (!res.ok) {
-      if (res.status === 403) {
+      if (message.includes('limited to 2 clients')) {
         onLimitReached()
         onClose()
       } else {
-        setError((json as { error?: string }).error ?? 'Failed to add client.')
+        setError(message)
       }
-      setLoading(false)
-      return
-    }
 
-    onAdd(json as Client)
-    setName('')
-    setCurrency('USD')
-    setError(null)
-    setLoading(false)
-    onClose()
+      setLoading(false)
+    }
   }
 
   return (

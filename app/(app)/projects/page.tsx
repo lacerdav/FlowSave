@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProjectsPageClient } from '@/components/projects/ProjectsPageClient'
-import type { Client, Project, ScheduleEntry } from '@/types'
+import { normalizeProjects, normalizeScheduleEntries } from '@/types'
+import type { Client } from '@/types'
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
@@ -34,8 +35,8 @@ export default async function ProjectsPage() {
       </div>
       <div className="fade-up-section page-content-stack">
         <ProjectsPageClient
-          initialProjects={(projects ?? []) as Project[]}
-          initialScheduleEntries={(scheduleRows ?? []) as ScheduleEntry[]}
+          initialProjects={normalizeProjects(projects ?? [])}
+          initialScheduleEntries={normalizeScheduleEntries(scheduleRows ?? [])}
           clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
         />
       </div>

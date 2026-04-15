@@ -370,7 +370,7 @@ DO NOT use:
   Free:   2 clients, basic dashboard, no AI, no forecast
   Pro:    $19/month — unlimited clients, forecast, alerts, AI insights
   Annual: $15/month ($180/year)
-  Trial:  14 days, card required at signup
+  No fremium = no trials
 
 ---
 

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PaymentsPageClient } from '@/components/payments/PaymentsPageClient'
-import type { Client, Payment, Project, ScheduleEntry } from '@/types'
+import { normalizeProjects, normalizeScheduleEntries } from '@/types'
+import type { Client, Payment } from '@/types'
 
 export default async function PaymentsPage() {
   const supabase = await createClient()
@@ -43,8 +44,8 @@ export default async function PaymentsPage() {
         <PaymentsPageClient
           initialPayments={(payments ?? []) as Payment[]}
           clients={(clients ?? []) as Pick<Client, 'id' | 'name' | 'currency'>[]}
-          projects={(projects ?? []) as Project[]}
-          scheduleEntries={(scheduleRows ?? []) as ScheduleEntry[]}
+          projects={normalizeProjects(projects ?? [])}
+          scheduleEntries={normalizeScheduleEntries(scheduleRows ?? [])}
         />
       </div>
     </div>

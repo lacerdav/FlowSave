@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlowSave
 
-## Getting Started
+FlowSave is a cashflow operating system for freelancers.
 
-First, run the development server:
+It is built around three distinct layers of money:
+
+```text
+Projects          → pipeline
+Payment Schedule  → committed future revenue
+Payments          → realized cash
+```
+
+That separation is the core product rule and should remain visible throughout the app.
+
+## Stack
+
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS 4 + shadcn/ui primitives
+- Supabase for auth and Postgres
+- motion/react for interface motion
+- Recharts for dashboard visuals
+- Stripe planned for billing
+- OpenRouter planned for Pro AI insights
+
+## Local Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env.local` with the required Supabase values and any optional service keys used in your environment.
+
+Expected environment variables:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `OPENROUTER_API_KEY` when testing Pro AI later
+- Stripe and Resend keys when monetization/email work begins
+
+3. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Production validation:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database
 
-## Learn More
+Supabase migrations live in `supabase/migrations`.
 
-To learn more about Next.js, take a look at the following resources:
+Current migrations in repo:
+- `001_init.sql`
+- `002_project_payment_links.sql`
+- `003_project_sub_status.sql`
+- `004_payment_schedule.sql`
+- `005_user_profile_fields.sql`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Before any schema change, verify the code and database are aligned. Do not assume a migration has already been applied remotely.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Current Product Status
 
-## Deploy on Vercel
+Implemented:
+- Dashboard 2.0 with hero/gap/pending/recent hierarchy
+- Clients, payments, projects, schedule, and upcoming views
+- Auth redesign with richer sign-up form and OAuth buttons
+- Free-tier client gating and upgrade entry points
+- Floating app shell with collapsible sidebar
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Next:
+- Finish cross-page polish and consistency
+- Build shared monetization gates
+- Add Stripe checkout and plan sync
+- Add Pro AI insights after billing is stable
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- `PLAN.md` is the current roadmap snapshot.
+- `CLAUDE.md` contains product, design, and implementation constraints for the project.

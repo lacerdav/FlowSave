@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { ConfirmActionModal } from '@/components/shared/ConfirmActionModal'
 import { AddPaymentModal } from './AddPaymentModal'
 import { EditPaymentModal } from './EditPaymentModal'
 import { PaymentList } from './PaymentList'
+import { apiRequest } from '@/lib/api-client'
 import type {
   Client,
   Payment,
@@ -63,12 +65,17 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
 
   async function deletePayment(id: string) {
     setDeletingId(id)
-    const res = await fetch(`/api/payments/${id}`, { method: 'DELETE' })
-    if (res.ok) {
+    try {
+      await apiRequest<{ ok: true }>(`/api/payments/${id}`, { method: 'DELETE' }, 'Failed to delete payment.')
       setPayments((prev) => prev.filter((p) => p.id !== id))
       if (editingPayment?.id === id) setEditingPayment(null)
+      toast.success('Payment deleted.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete payment.')
+      throw error
+    } finally {
+      setDeletingId(null)
     }
-    setDeletingId(null)
   }
 
   async function handleSave(
@@ -81,17 +88,15 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
     },
     id: string
   ) {
-    const res = await fetch(`/api/payments/${id}`, {
+    const json = await apiRequest<Payment & { error?: string }>(`/api/payments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
-    })
-
-    const json = await res.json().catch(() => ({})) as Payment & { error?: string }
-    if (!res.ok) throw new Error(json.error ?? 'Failed to update payment.')
+    }, 'Failed to update payment.')
 
     setPayments(prev => prev.map(payment => payment.id === id ? json : payment))
     setEditingPayment(json)
+    toast.success('Payment updated.')
   }
 
   async function handleDelete(id: string) {
@@ -99,7 +104,9 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
       && window.localStorage.getItem(SKIP_PAYMENT_DELETE_CONFIRM_KEY) === 'true'
 
     if (shouldSkipConfirm) {
-      await deletePayment(id)
+      try {
+        await deletePayment(id)
+      } catch {}
       return
     }
 
@@ -157,7 +164,11 @@ export function PaymentsPageClient({ initialPayments, clients, projects, schedul
           if (rememberChoice && typeof window !== 'undefined') {
             window.localStorage.setItem(SKIP_PAYMENT_DELETE_CONFIRM_KEY, 'true')
           }
-          await deletePayment(confirmingDeletePayment.id)
+          try {
+            await deletePayment(confirmingDeletePayment.id)
+          } catch {
+            return
+          }
           setConfirmingDeletePayment(null)
         }}
       />

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUser } from '@/types'
 import type { User } from '@/types'
 
 export async function getUser(): Promise<User | null> {
@@ -12,7 +13,7 @@ export async function getUser(): Promise<User | null> {
     .eq('id', user.id)
     .single()
 
-  return data
+  return data ? normalizeUser(data) : null
 }
 
 export async function upsertUser(id: string, email: string): Promise<void> {

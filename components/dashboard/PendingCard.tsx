@@ -19,7 +19,6 @@ export function PendingCard({
   thisMonthBrlAmount,
   usdAmount,
   brlAmount,
-  pendingCount,
   subtitle,
 }: PendingCardProps) {
   const router = useRouter()

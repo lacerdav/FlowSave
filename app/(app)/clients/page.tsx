@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ClientsPageClient } from '@/components/clients/ClientsPageClient'
 import { enrichClients } from '@/lib/supabase/queries/clients'
+import { normalizePlan } from '@/types'
 
 export default async function ClientsPage() {
   const supabase = await createClient()
@@ -47,7 +48,7 @@ export default async function ClientsPage() {
       <div className="fade-up-section page-content-stack">
         <ClientsPageClient
           initialClients={enriched}
-          plan={(userData?.plan ?? 'free') as 'free' | 'pro'}
+          plan={normalizePlan(userData?.plan)}
         />
       </div>
     </div>

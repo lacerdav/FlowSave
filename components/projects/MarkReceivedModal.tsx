@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import { MoneyInput } from '@/components/ui/money-input'
 import { Textarea } from '@/components/ui/textarea'
 import { DatePicker } from '@/components/ui/date-picker'
 import { formatCurrency } from '@/lib/utils'
+import { apiRequest } from '@/lib/api-client'
 import type { Client, Payment, Project } from '@/types'
 
 interface Props {
@@ -48,7 +50,11 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
     setLoading(true)
     setError(null)
 
-    const res = await fetch(`/api/projects/${project.id}/receive`, {
+    const json = await apiRequest<{
+      project: Project
+      payment: Payment
+      error?: string
+    }>(`/api/projects/${project.id}/receive`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -57,23 +63,18 @@ export function MarkReceivedModal({ project, client, open, onClose, onSuccess }:
         received_at: date,
         notes: notes.trim() || null,
       }),
+    }, 'Failed to mark as received.').catch(error => {
+      setError(error instanceof Error ? error.message : 'Failed to mark as received.')
+      setLoading(false)
+      return null
     })
 
-    const json = await res.json().catch(() => ({})) as {
-      project?: Project
-      payment?: Payment
-      error?: string
-    }
-
-    if (!res.ok) {
-      setError(json.error ?? 'Failed to mark as received.')
-      setLoading(false)
-      return
-    }
+    if (!json) return
 
     setLoading(false)
     setError(null)
-    onSuccess(json.payment!, json.project!)
+    onSuccess(json.payment, json.project)
+    toast.success('Project marked as received.')
     onClose()
   }
 

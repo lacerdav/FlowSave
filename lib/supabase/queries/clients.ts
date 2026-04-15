@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { normalizeProjectStatus } from '@/types'
 import type { Client, Payment, Project } from '@/types'
 
 export interface ClientWithStats extends Client {
@@ -15,7 +16,7 @@ export interface ClientWithStats extends Client {
 export function enrichClients(
   clients: Client[],
   payments: Pick<Payment, 'client_id' | 'amount' | 'received_at'>[],
-  projects: Pick<Project, 'client_id' | 'status'>[],
+  projects: Array<Pick<Project, 'client_id'> & { status: string }>,
 ): ClientWithStats[] {
   return clients.map((client) => {
     const clientPayments = payments.filter((p) => p.client_id === client.id)
@@ -27,7 +28,10 @@ export function enrichClients(
       : null
 
     const active_project_count = projects.filter(
-      (p) => p.client_id === client.id && (p.status === 'confirmed' || p.status === 'pending')
+      (p) => {
+        const status = normalizeProjectStatus(p.status)
+        return p.client_id === client.id && (status === 'confirmed' || status === 'pending')
+      }
     ).length
 
     return { ...client, total_received, last_payment_date, active_project_count }

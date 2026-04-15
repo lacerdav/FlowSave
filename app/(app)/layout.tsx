@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/AppShell'
+import { normalizePlan } from '@/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single()
 
   const email = userData?.email ?? user.email ?? ''
-  const plan = (userData?.plan ?? 'free') as 'free' | 'pro'
+  const plan = normalizePlan(userData?.plan)
 
   return (
     <AppShell email={email} plan={plan}>

@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react'
 import { Navbar } from '@/components/layout/Navbar'
@@ -9,8 +9,27 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import type { Plan } from '@/types'
 
 const SIDEBAR_STORAGE_KEY = 'flowsave.sidebar-collapsed'
+const SIDEBAR_PREFERENCE_EVENT = 'flowsave:sidebar-preference-change'
 const SIDEBAR_WIDTH_EXPANDED = '224px'
 const SIDEBAR_WIDTH_COLLAPSED = '88px'
+
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange)
+  window.addEventListener(SIDEBAR_PREFERENCE_EVENT, onStoreChange)
+
+  return () => {
+    window.removeEventListener('storage', onStoreChange)
+    window.removeEventListener(SIDEBAR_PREFERENCE_EVENT, onStoreChange)
+  }
+}
+
+function getSidebarSnapshot() {
+  return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
+}
+
+function getSidebarServerSnapshot() {
+  return false
+}
 
 interface AppShellProps {
   children: React.ReactNode
@@ -19,21 +38,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, email, plan }: AppShellProps) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
+  const collapsed = useSyncExternalStore(
+    subscribe,
+    getSidebarSnapshot,
+    getSidebarServerSnapshot
+  )
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY)
-    if (stored === 'true') {
-      setCollapsed(true)
-    }
-    setHydrated(true)
-  }, [])
-
-  useEffect(() => {
-    if (!hydrated) return
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed))
-  }, [collapsed, hydrated])
+  function handleToggleSidebar() {
+    const nextValue = !collapsed
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(nextValue))
+    window.dispatchEvent(new Event(SIDEBAR_PREFERENCE_EVENT))
+  }
 
   return (
     <MotionConfig reducedMotion="user">
@@ -52,7 +67,7 @@ export function AppShell({ children, email, plan }: AppShellProps) {
           <Sidebar collapsed={collapsed} />
           <button
             type="button"
-            onClick={() => setCollapsed((current) => !current)}
+            onClick={handleToggleSidebar}
             className="shell-divider-toggle"
             aria-controls="app-sidebar"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

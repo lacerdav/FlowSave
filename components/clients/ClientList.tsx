@@ -117,7 +117,9 @@ export function ClientList({ clients, onEdit, onDelete, deletingId }: Props) {
                 <div className="entity-card__meta">
                   {client.last_payment_date
                     ? `Last payment ${formatDate(client.last_payment_date.split('T')[0])}`
-                    : `Added ${formatDate(client.created_at.split('T')[0])}`
+                    : client.created_at
+                    ? `Added ${formatDate(client.created_at.split('T')[0])}`
+                    : 'Recently added'
                   }
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { MoreHorizontal } from 'lucide-react'
 import { calcFloatPos } from '@/lib/floating'
+import { useIsClient } from '@/lib/use-is-client'
 import type { FloatStyle } from '@/lib/floating'
 
 // ActionMenu panels are narrow — max ~11rem wide, height depends on item count.
@@ -38,12 +39,10 @@ export function ActionMenu({
   const [open, setOpen] = useState(false)
   const [panelStyle, setPanelStyle] = useState<FloatStyle>({ position: 'fixed' })
   const [openUpward, setOpenUpward] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useIsClient()
   const rootRef  = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const panelId = useId()
-
-  useEffect(() => { setMounted(true) }, [])
 
   const estimatedPanelHeight = items.length * ITEM_HEIGHT + PANEL_PADDING
 

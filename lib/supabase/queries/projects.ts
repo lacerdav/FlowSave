@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { normalizeProject, normalizeProjects } from '@/types'
 import type { Project, ProjectStatus } from '@/types'
 
 export async function getProjects(userId: string): Promise<Project[]> {
@@ -8,7 +9,7 @@ export async function getProjects(userId: string): Promise<Project[]> {
     .select('*')
     .eq('user_id', userId)
     .order('expected_date', { ascending: true })
-  return data ?? []
+  return normalizeProjects(data ?? [])
 }
 
 export async function createProject(
@@ -27,7 +28,7 @@ export async function createProject(
     .insert({ user_id: userId, ...values })
     .select()
     .single()
-  return { data, error: error?.message ?? null }
+  return { data: data ? normalizeProject(data) : null, error: error?.message ?? null }
 }
 
 export async function updateProject(
@@ -49,7 +50,7 @@ export async function updateProject(
     .eq('user_id', userId)
     .select()
     .single()
-  return { data, error: error?.message ?? null }
+  return { data: data ? normalizeProject(data) : null, error: error?.message ?? null }
 }
 
 export async function deleteProject(

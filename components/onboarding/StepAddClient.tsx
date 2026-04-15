@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function StepAddClient({ userId, onNext, onSkip }: Props) {
+  void userId
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [loading, setLoading] = useState(false)

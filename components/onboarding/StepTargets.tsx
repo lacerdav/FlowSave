@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function StepTargets({ userId, onNext, onSkip }: Props) {
+  void userId
   const [salary, setSalary] = useState<number | null>(null)
   const [taxPct, setTaxPct] = useState('25')
   const [budget, setBudget] = useState<number | null>(null)

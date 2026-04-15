@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { calcFloatPos } from '@/lib/floating'
+import { useIsClient } from '@/lib/use-is-client'
 import type { FloatStyle } from '@/lib/floating'
 
 // Approximate panel dimensions for collision detection.
@@ -79,18 +80,10 @@ export function DatePicker({
   const rootRef  = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useIsClient()
   const [panelStyle, setPanelStyle] = useState<FloatStyle>({ position: 'fixed' })
   const [openUpward, setOpenUpward] = useState(false)
   const [monthCursor, setMonthCursor] = useState(() => parseDate(value) ?? new Date())
-
-  useEffect(() => { setMounted(true) }, [])
-
-  useEffect(() => {
-    if (!open) {
-      setMonthCursor(parseDate(value) ?? new Date())
-    }
-  }, [open, value])
 
   const recalcPos = useCallback(() => {
     if (!rootRef.current) return
@@ -228,7 +221,10 @@ export function DatePicker({
         type="button"
         className={cn('date-picker-trigger interactive', triggerClassName)}
         data-open={open ? 'true' : 'false'}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          setMonthCursor(parseDate(value) ?? new Date())
+          setOpen((current) => !current)
+        }}
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}

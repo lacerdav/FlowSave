@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { normalizeScheduleEntries } from '@/types'
 import type { ScheduleEntry } from '@/types'
 
 /** All schedule entries for a user, ordered by expected_date ascending. */
@@ -9,7 +10,7 @@ export async function getScheduleEntries(userId: string): Promise<ScheduleEntry[
     .select('*')
     .eq('user_id', userId)
     .order('expected_date', { ascending: true })
-  return (data ?? []) as ScheduleEntry[]
+  return normalizeScheduleEntries(data ?? [])
 }
 
 /** Schedule entries for a specific project, ordered by expected_date ascending. */
@@ -24,7 +25,7 @@ export async function getScheduleEntriesByProject(
     .eq('user_id', userId)
     .eq('project_id', projectId)
     .order('expected_date', { ascending: true })
-  return (data ?? []) as ScheduleEntry[]
+  return normalizeScheduleEntries(data ?? [])
 }
 
 /** Bulk insert schedule entries. Returns the created rows. */
@@ -45,7 +46,7 @@ export async function insertScheduleEntries(
     .insert(rows)
     .select()
   if (error) return { data: null, error: error.message }
-  return { data: (data ?? []) as ScheduleEntry[], error: null }
+  return { data: normalizeScheduleEntries(data ?? []), error: null }
 }
 
 /**

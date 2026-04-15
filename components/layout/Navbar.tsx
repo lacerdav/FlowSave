@@ -30,23 +30,29 @@ export function Navbar({ email, plan }: NavbarProps) {
         <span className="brand-name">FlowSave</span>
       </Link>
 
-      <div className="navbar-actions">
-        <span className="navbar-email hidden max-w-[132px] truncate sm:block sm:max-w-[220px]">
-          {email}
-        </span>
-
+      <div className="shell-plan-dock" aria-label="Current plan status">
         <span className="plan-badge" data-plan={plan}>
           {plan === 'pro' ? 'PRO ✓' : 'FREE'}
         </span>
 
-        {plan === 'free' && (
+        {plan === 'free' ? (
           <Link
             href="/upgrade"
             className="upgrade-link"
           >
             Upgrade to Pro
           </Link>
+        ) : (
+          <span className="shell-plan-copy">
+            Unlimited clients, forecast, and AI
+          </span>
         )}
+      </div>
+
+      <div className="navbar-actions">
+        <span className="navbar-email hidden max-w-[132px] truncate sm:block sm:max-w-[220px]">
+          {email}
+        </span>
       </div>
     </header>
   )

@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { m } from 'motion/react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -132,7 +133,14 @@ export function LoginForm({ urlError }: LoginFormProps) {
   })
 
   // Declare here so handlers below can close over it
-  const watchedCurrency = signUpForm.watch('primary_currency')
+  const watchedCurrency = useWatch({
+    control: signUpForm.control,
+    name: 'primary_currency',
+  })
+  const watchedRole = useWatch({
+    control: signUpForm.control,
+    name: 'freelance_role',
+  })
 
   function switchMode(next: Mode) {
     setMode(next)
@@ -248,6 +256,7 @@ export function LoginForm({ urlError }: LoginFormProps) {
       const json = await res.json() as { redirect?: string; error?: string }
       if (json.error) {
         setServerError(json.error)
+        toast.error(json.error)
         return
       }
       router.push(json.redirect ?? '/onboarding')
@@ -284,7 +293,6 @@ export function LoginForm({ urlError }: LoginFormProps) {
   const signingUp  = signUpForm.formState.isSubmitting
   const panelTransition = { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const }
 
-  const watchedRole    = signUpForm.watch('freelance_role')
   const currencySymbol = getCurrencySymbol(watchedCurrency)
   const goalPlaceholder = watchedCurrency === 'BRL' ? '5.000,00' : '5,000.00'
 

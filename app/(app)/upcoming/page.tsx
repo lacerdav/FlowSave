@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { UpcomingPageClient, type MonthGroup, type EnrichedEntry } from '@/components/upcoming/UpcomingPageClient'
-import type { Client, Project, ScheduleEntry, ScheduleEntryStatus } from '@/types'
+import { normalizeScheduleEntries, normalizeScheduleEntryStatus } from '@/types'
+import type { Client, Project, ScheduleEntry } from '@/types'
 
 export default async function UpcomingPage() {
   const supabase = await createClient()
@@ -28,7 +29,7 @@ export default async function UpcomingPage() {
       .eq('user_id', user.id),
   ])
 
-  const entries: ScheduleEntry[] = (scheduleRows ?? []) as ScheduleEntry[]
+  const entries: ScheduleEntry[] = normalizeScheduleEntries(scheduleRows ?? [])
   const projects = (projectRows ?? []) as Pick<Project, 'id' | 'name' | 'client_id'>[]
   const clients = (clientRows ?? []) as Pick<Client, 'id' | 'name'>[]
 
@@ -53,7 +54,7 @@ export default async function UpcomingPage() {
       amount: entry.amount,
       currency: entry.currency,
       expectedDate: entry.expected_date,
-      status: entry.status as ScheduleEntryStatus,
+      status: normalizeScheduleEntryStatus(entry.status),
       label: entry.label,
       paymentId: entry.payment_id,
     }

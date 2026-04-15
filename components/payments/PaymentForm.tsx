@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
@@ -9,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { CreateProjectFromPaymentModal } from '@/components/projects/CreateProjectFromPaymentModal'
+import { apiRequest } from '@/lib/api-client'
 import type {
   Client,
   EditableProjectStatus,
@@ -127,21 +129,16 @@ export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, on
     status: EditableProjectStatus
     sub_status: import('@/types').ProjectSubStatus | null
   }) {
-    const res = await fetch('/api/projects', {
+    const json = await apiRequest<Project & { error?: string }>('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
-    })
-
-    const json = await res.json().catch(() => ({})) as Project & { error?: string }
-
-    if (!res.ok) {
-      throw new Error(json.error ?? 'Failed to create project.')
-    }
+    }, 'Failed to create project.')
 
     onProjectAdd(json)
     applyProjectDefaults(json)
     setShowCreateProjectModal(false)
+    toast.success('Project created and linked.')
     return json
   }
 
@@ -154,36 +151,34 @@ export function PaymentForm({ clients, projects, scheduleEntries = [], onAdd, on
     setLoading(true)
     setError(null)
 
-    const res = await fetch('/api/payments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: clientId === 'none' ? null : clientId,
-        amount,
-        currency,
-        received_at: date,
-        notes: notes || null,
-        project_id: projectId === 'none' ? null : projectId,
-        schedule_entry_id: scheduleEntryId === 'none' ? null : scheduleEntryId,
-      }),
-    })
+    try {
+      const json = await apiRequest<PaymentCreateResponse>('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId === 'none' ? null : clientId,
+          amount,
+          currency,
+          received_at: date,
+          notes: notes || null,
+          project_id: projectId === 'none' ? null : projectId,
+          schedule_entry_id: scheduleEntryId === 'none' ? null : scheduleEntryId,
+        }),
+      }, 'Failed to log payment.')
 
-    const json = await res.json().catch(() => ({}))
-
-    if (!res.ok) {
-      setError((json as { error?: string }).error ?? 'Failed to log payment.')
+      onAdd(json)
+      setAmount(null)
+      setNotes('')
+      setClientId('none')
+      setProjectId('none')
+      setScheduleEntryId('none')
+      setDate(new Date().toISOString().split('T')[0])
       setLoading(false)
-      return
+      toast.success('Payment logged.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to log payment.')
+      setLoading(false)
     }
-
-    onAdd(json as PaymentCreateResponse)
-    setAmount(null)
-    setNotes('')
-    setClientId('none')
-    setProjectId('none')
-    setScheduleEntryId('none')
-    setDate(new Date().toISOString().split('T')[0])
-    setLoading(false)
   }
 
   return (

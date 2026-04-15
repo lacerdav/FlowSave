@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
-import type { Payment, Project, ScheduleEntry } from '@/types'
+import { normalizeProjects, normalizeScheduleEntries } from '@/types'
+import type { Payment, Project } from '@/types'
 
 type Supabase = SupabaseClient<Database>
 
@@ -50,7 +51,7 @@ export async function attemptAutoLink(
     )
 
     // Filter candidates
-    const matchingEntries = (scheduleRows as ScheduleEntry[])
+    const matchingEntries = normalizeScheduleEntries(scheduleRows)
       .filter(e => {
         const clientId = projectClientMap.get(e.project_id) ?? null
         if (clientId !== payment.client_id) return false
@@ -115,7 +116,7 @@ export async function attemptAutoLink(
 
   if (!candidates || candidates.length === 0) return payment
 
-  const matching = (candidates as Project[]).filter(p => {
+  const matching = normalizeProjects(candidates).filter(p => {
     if (p.client_id !== payment.client_id) return false
     if (p.expected_amount == null || p.expected_date == null) return false
     const ratio = Math.abs(p.expected_amount - payment.amount) / payment.amount

@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PlusIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { AddClientModal } from './AddClientModal'
 import { EditClientModal } from './EditClientModal'
 import { ClientList } from './ClientList'
 import { UpgradeLimitModal } from './UpgradeLimitModal'
 import { ConfirmActionModal } from '@/components/shared/ConfirmActionModal'
+import { apiRequest } from '@/lib/api-client'
 import type { Client } from '@/types'
 import type { ClientWithStats } from '@/lib/supabase/queries/clients'
 
@@ -40,27 +42,30 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
 
   async function deleteClient(id: string) {
     setDeletingId(id)
-    const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' })
-    if (res.ok) {
+    try {
+      await apiRequest<{ ok: true }>(`/api/clients/${id}`, { method: 'DELETE' }, 'Failed to delete client.')
       setClients((prev) => prev.filter((c) => c.id !== id))
       if (editingClient?.id === id) setEditingClient(null)
+      toast.success('Client deleted.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete client.')
+      throw error
+    } finally {
+      setDeletingId(null)
     }
-    setDeletingId(null)
   }
 
   async function handleSave(values: { name: string; currency: string }, id: string) {
-    const res = await fetch(`/api/clients/${id}`, {
+    const json = await apiRequest<Client & { error?: string }>(`/api/clients/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
-    })
-
-    const json = await res.json().catch(() => ({})) as Client & { error?: string }
-    if (!res.ok) throw new Error(json.error ?? 'Failed to update client.')
+    }, 'Failed to update client.')
 
     // Preserve existing stats while updating base fields
     setClients(prev => prev.map(c => c.id === id ? { ...c, ...json } : c))
     setEditingClient(prev => prev?.id === id ? { ...prev, ...json } : prev)
+    toast.success('Client updated.')
   }
 
   async function handleDelete(id: string) {
@@ -68,7 +73,9 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
       && window.localStorage.getItem(SKIP_CLIENT_DELETE_CONFIRM_KEY) === 'true'
 
     if (shouldSkipConfirm) {
-      await deleteClient(id)
+      try {
+        await deleteClient(id)
+      } catch {}
       return
     }
 
@@ -167,7 +174,11 @@ export function ClientsPageClient({ initialClients, plan }: Props) {
           if (rememberChoice && typeof window !== 'undefined') {
             window.localStorage.setItem(SKIP_CLIENT_DELETE_CONFIRM_KEY, 'true')
           }
-          await deleteClient(confirmingDeleteClient.id)
+          try {
+            await deleteClient(confirmingDeleteClient.id)
+          } catch {
+            return
+          }
           setConfirmingDeleteClient(null)
         }}
       />

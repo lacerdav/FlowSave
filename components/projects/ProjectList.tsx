@@ -6,6 +6,7 @@ import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'motion/react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MarkReceivedModal } from './MarkReceivedModal'
 import { ActionMenu } from '@/components/ui/action-menu'
+import { normalizeProjectSubStatus } from '@/types'
 import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus, ScheduleEntry } from '@/types'
 
 interface Props {
@@ -137,14 +138,14 @@ const PENDING_STAGE_CONFIG: Record<ProjectSubStatus, StatusConfig> = {
 
 function getStatusLabel(project: Project): string {
   if (project.status === 'pending' && project.sub_status) {
-    return SUB_STATUS_LABEL[project.sub_status]
+    return SUB_STATUS_LABEL[normalizeProjectSubStatus(project.sub_status, 'prospecting') ?? 'prospecting']
   }
   return STATUS_CONFIG[project.status].label
 }
 
 function getStatusConfig(project: Project): StatusConfig {
   if (project.status === 'pending') {
-    return PENDING_STAGE_CONFIG[project.sub_status ?? 'prospecting']
+    return PENDING_STAGE_CONFIG[normalizeProjectSubStatus(project.sub_status, 'prospecting') ?? 'prospecting']
   }
 
   return STATUS_CONFIG[project.status]
@@ -167,7 +168,7 @@ function mergeShadows(interactiveShadow: string | undefined, ambientShadow: stri
   return interactiveShadow ?? ambientShadow
 }
 
-function amountColor(status: ProjectStatus): string {
+function amountColor(status: string): string {
   if (status === 'received') return 'var(--green)'
   if (status === 'cancelled') return 'var(--text3)'
   return 'var(--accent2)'

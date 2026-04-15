@@ -8,6 +8,7 @@ import { PendingCard } from '@/components/dashboard/PendingCard'
 import { CashFlowChart, type ChartPoint } from '@/components/dashboard/CashFlowChart'
 import { DashboardMotionShell } from '@/components/dashboard/DashboardMotionShell'
 import { RecentPayments, type PaymentItem } from '@/components/dashboard/RecentPayments'
+import { normalizeProjects, normalizeScheduleEntries } from '@/types'
 import type { Client, Payment, Project, ScheduleEntry, Settings } from '@/types'
 
 const CLIENT_COLORS = [
@@ -72,8 +73,8 @@ export default async function DashboardPage() {
 
   const clients: Client[] = clientRows ?? []
   const payments: Payment[] = paymentRows ?? []
-  const projects: Project[] = projectRows ?? []
-  const scheduleEntries: ScheduleEntry[] = scheduleRows ?? []
+  const projects: Project[] = normalizeProjects(projectRows ?? [])
+  const scheduleEntries: ScheduleEntry[] = normalizeScheduleEntries(scheduleRows ?? [])
 
   // ── Date helpers ────────────────────────────────────────────────────────────
   const today = new Date()

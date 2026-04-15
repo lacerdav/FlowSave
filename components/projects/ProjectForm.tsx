@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,10 @@ import { Label } from '@/components/ui/label'
 import { DatePicker } from '@/components/ui/date-picker'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  normalizeProjectStatus,
+  normalizeProjectSubStatus,
+} from '@/types'
 import type { Client, EditableProjectStatus, Project, ProjectStatus, ProjectSubStatus } from '@/types'
 
 const projectSchema = z.object({
@@ -88,29 +92,30 @@ export function ProjectForm({
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const isEdit = editing !== null
+  const defaultValues: ProjectFormValues = editing ? {
+    name: editing.name,
+    client_id: editing.client_id,
+    expected_amount: editing.expected_amount,
+    expected_date: editing.expected_date ?? '',
+    status: normalizeProjectStatus(editing.status),
+    sub_status: normalizeProjectSubStatus(editing.sub_status, 'prospecting'),
+  } : {
+    name: initialValues?.name ?? '',
+    client_id: initialValues?.client_id ?? null,
+    expected_amount: initialValues?.expected_amount ?? null,
+    expected_date: initialValues?.expected_date ?? '',
+    status: normalizeProjectStatus(initialValues?.status, 'pending'),
+    sub_status: normalizeProjectSubStatus(initialValues?.sub_status, 'prospecting'),
+  }
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
-    defaultValues: editing ? {
-      name: editing.name,
-      client_id: editing.client_id,
-      expected_amount: editing.expected_amount,
-      expected_date: editing.expected_date ?? '',
-      status: editing.status,
-      sub_status: editing.sub_status ?? 'prospecting',
-    } : {
-      name: initialValues?.name ?? '',
-      client_id: initialValues?.client_id ?? null,
-      expected_amount: initialValues?.expected_amount ?? null,
-      expected_date: initialValues?.expected_date ?? '',
-      status: initialValues?.status ?? 'pending',
-      sub_status: initialValues?.sub_status ?? 'prospecting',
-    }
+    defaultValues,
   })
 
-  const { watch, handleSubmit, control, setValue, formState: { isSubmitting, errors } } = form
-  const status = watch('status')
-  const clientId = watch('client_id')
+  const { handleSubmit, control, setValue, formState: { isSubmitting, errors } } = form
+  const status = useWatch({ control, name: 'status' })
+  const clientId = useWatch({ control, name: 'client_id' })
   const selectedClient = clientId ? clients.find(c => c.id === clientId) : null
 
   const isPending = status === 'pending'
@@ -121,10 +126,12 @@ export function ProjectForm({
   async function onSubmit(data: ProjectFormValues) {
     setSubmitError(null)
 
-    const finalStatus = canEditStatus ? data.status : (editing?.status ?? data.status)
+    const finalStatus: ProjectFormValues['status'] = canEditStatus
+      ? data.status
+      : normalizeProjectStatus(editing?.status, data.status)
     const finalSubStatus = canEditStatus
       ? (data.status === 'pending' ? data.sub_status : null)
-      : (editing?.sub_status ?? null)
+      : normalizeProjectSubStatus(editing?.sub_status, null)
 
     try {
       await onSave({
@@ -137,10 +144,13 @@ export function ProjectForm({
     }
   }
 
-  const nameVal = watch('name') || ''
+  const nameVal = useWatch({ control, name: 'name' }) || ''
   let submitDisabled = isSubmitting || !nameVal.trim()
   
-  if (requiresAmountAndDate && (!watch('expected_amount') || !watch('expected_date'))) {
+  const expectedAmount = useWatch({ control, name: 'expected_amount' })
+  const expectedDate = useWatch({ control, name: 'expected_date' })
+
+  if (requiresAmountAndDate && (!expectedAmount || !expectedDate)) {
      submitDisabled = true
   }
 
@@ -224,7 +234,7 @@ export function ProjectForm({
                     field.onChange(v)
                     const newSubStatus = v === 'pending' ? (form.getValues('sub_status') ?? 'prospecting') : null
                     setValue('sub_status', newSubStatus)
-                    onStatusChange?.(v as ProjectStatus, newSubStatus)
+                    onStatusChange?.(normalizeProjectStatus(v, 'pending'), newSubStatus)
                   }}
                 >
                   <SelectTrigger disabled={isSubmitting}>
@@ -253,8 +263,9 @@ export function ProjectForm({
               <Select
                 value={field.value ?? 'prospecting'}
                 onValueChange={(v: string | null) => {
-                  field.onChange(v)
-                  onStatusChange?.(status, v as ProjectSubStatus)
+                  const normalizedSubStatus = normalizeProjectSubStatus(v, 'prospecting')
+                  field.onChange(normalizedSubStatus)
+                  onStatusChange?.(status, normalizedSubStatus)
                 }}
               >
                 <SelectTrigger disabled={isSubmitting}>

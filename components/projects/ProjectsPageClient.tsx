@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { AddProjectModal } from './AddProjectModal'
 import { EditProjectModal } from './EditProjectModal'
 import { MoveToNegotiatingModal } from './MoveToNegotiatingModal'
 import { PaymentPlanModal } from './PaymentPlanModal'
 import { ProjectList } from './ProjectList'
+import { normalizeProjectStatus } from '@/types'
+import { apiRequest } from '@/lib/api-client'
 import type { Client, Payment, Project, ProjectStatus, ProjectSubStatus, ScheduleEntry } from '@/types'
 
 interface Props {
@@ -45,53 +48,57 @@ export function ProjectsPageClient({ initialProjects, initialScheduleEntries, cl
 
   async function handleSave(values: SaveValues, editingId: string | null) {
     if (editingId) {
-      const res = await fetch(`/api/projects/${editingId}`, {
+      const json = await apiRequest<Project & { error?: string }>(`/api/projects/${editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
-      })
-      const json = await res.json() as Project & { error?: string }
-      if (!res.ok) throw new Error(json.error ?? 'Failed to update project.')
+      }, 'Failed to update project.')
       setProjects(prev => sortProjects(prev.map(p => p.id === editingId ? json : p)))
       setHighlightedProjectId(json.id)
       setEditing(null)
+      toast.success('Project updated.')
     } else {
-      const res = await fetch('/api/projects', {
+      const json = await apiRequest<Project & { error?: string }>('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
-      })
-      const json = await res.json() as Project & { error?: string }
-      if (!res.ok) throw new Error(json.error ?? 'Failed to add project.')
+      }, 'Failed to add project.')
       setProjects(prev => sortProjects([...prev, json]))
       setHighlightedProjectId(json.id)
       setShowAddProject(false)
+      toast.success('Project added.')
     }
   }
 
   async function handleDelete(id: string) {
     setDeletingId(id)
-    const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' })
-    if (res.ok) {
+    try {
+      await apiRequest<{ ok: true }>(`/api/projects/${id}`, { method: 'DELETE' }, 'Failed to delete project.')
       setProjects(prev => prev.filter(p => p.id !== id))
       if (editing?.id === id) setEditing(null)
+      toast.success('Project deleted.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete project.')
+    } finally {
+      setDeletingId(null)
     }
-    setDeletingId(null)
   }
 
   async function handleCancelProject(project: Project) {
-    const res = await fetch(`/api/projects/${project.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'cancelled' as ProjectStatus }),
-    })
+    try {
+      const json = await apiRequest<Project & { error?: string }>(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: normalizeProjectStatus('cancelled') }),
+      }, 'Failed to cancel project.')
 
-    const json = await res.json().catch(() => ({})) as Project & { error?: string }
-    if (!res.ok) return
-
-    setProjects(prev => sortProjects(prev.map(p => p.id === project.id ? json : p)))
-    setHighlightedProjectId(project.id)
-    if (editing?.id === project.id) setEditing(json)
+      setProjects(prev => sortProjects(prev.map(p => p.id === project.id ? json : p)))
+      setHighlightedProjectId(project.id)
+      if (editing?.id === project.id) setEditing(json)
+      toast.success('Project cancelled.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel project.')
+    }
   }
 
   async function handleMoveToNegotiating(values: {
@@ -116,38 +123,38 @@ export function ProjectsPageClient({ initialProjects, initialScheduleEntries, cl
       body.expected_date = values.expected_date
     }
 
-    const res = await fetch(`/api/projects/${transitioningProject.id}`, {
+    const json = await apiRequest<Project & { error?: string }>(`/api/projects/${transitioningProject.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    })
-
-    const json = await res.json().catch(() => ({})) as Project & { error?: string }
-    if (!res.ok) throw new Error(json.error ?? 'Failed to move project to negotiating.')
+    }, 'Failed to move project to negotiating.')
 
     setProjects(prev => sortProjects(prev.map(project => project.id === json.id ? json : project)))
     setHighlightedProjectId(json.id)
     if (editing?.id === json.id) setEditing(json)
     setTransitioningProject(null)
+    toast.success('Project moved to negotiating.')
   }
 
   async function handleMoveToConfirmed(project: Project) {
-    const res = await fetch(`/api/projects/${project.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: 'confirmed' as ProjectStatus,
-        sub_status: null,
-      }),
-    })
+    try {
+      const json = await apiRequest<Project & { error?: string }>(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: normalizeProjectStatus('confirmed'),
+          sub_status: null,
+        }),
+      }, 'Failed to confirm project.')
 
-    const json = await res.json().catch(() => ({})) as Project & { error?: string }
-    if (!res.ok) return
-
-    setProjects(prev => sortProjects(prev.map(item => item.id === json.id ? json : item)))
-    setHighlightedProjectId(json.id)
-    if (editing?.id === json.id) setEditing(json)
-    setSchedulingProject(json)
+      setProjects(prev => sortProjects(prev.map(item => item.id === json.id ? json : item)))
+      setHighlightedProjectId(json.id)
+      if (editing?.id === json.id) setEditing(json)
+      setSchedulingProject(json)
+      toast.success('Project confirmed.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to confirm project.')
+    }
   }
 
   function handleMarkReceived(_payment: Payment, updatedProject: Project) {

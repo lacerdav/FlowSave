@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function StepAddPayment({ userId, clientId, onNext, onSkip }: Props) {
+  void userId
   const [amount, setAmount] = useState<number | null>(null)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
